@@ -53,7 +53,7 @@ async function best(fen: string, lvl: (typeof AI_LEVELS)[number], movetime = 200
 const POSITIONS = [
   'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
   'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4', // mate in 1 available
-  'r3k2r/pPppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1', // complex, castling/ep
+  'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1', // complex, castling/ep
 ];
 
 describe('Stockfish AI', () => {
