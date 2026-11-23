@@ -242,6 +242,9 @@ input[type='range'] { width: 100%; accent-color: var(--bronze); }
   .thinking { top: 132px; }
 }
 @media (max-width: 520px) {
+  .logo-text { display: none; }
+  .bottom-bar .btn svg { display: none; }
+  .bottom-bar .btn.small { padding: 8px 10px; font-size: 11px; letter-spacing: 0.04em; }
   .hud-top { gap: 6px; left: 8px; right: 8px; top: 8px; }
   .pname { font-size: 12px; }
   .btn { padding: 10px 14px; font-size: 12px; }

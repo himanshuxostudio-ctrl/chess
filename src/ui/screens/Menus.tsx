@@ -21,7 +21,7 @@ function TopBar({ go, onSettings, back }: { go: (s: Screen) => void; onSettings:
           </button>
         )}
         <button className="logo" onClick={() => go('landing')}>
-          <Logo /> ANCIENT WARFARE CHESS
+          <Logo /> <span className="logo-text">ANCIENT WARFARE CHESS</span>
         </button>
       </div>
       <div style={{ display: 'flex', gap: 8 }}>

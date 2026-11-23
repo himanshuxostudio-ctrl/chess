@@ -1,0 +1,11 @@
+# One-click deploy on Render (https://render.com): Blueprint → this repo.
+services:
+  - type: web
+    name: ancient-warfare-chess
+    runtime: docker
+    plan: starter
+    healthCheckPath: /healthz
+    disk:
+      name: rooms
+      mountPath: /data
+      sizeGB: 1

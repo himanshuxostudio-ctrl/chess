@@ -27,13 +27,13 @@ export default function Scene() {
   const dpr: [number, number] = quality === 'high' ? [1, 2] : quality === 'medium' ? [1, 1.5] : [0.75, 1];
   return (
     <Canvas
-      shadows={quality !== 'low' ? { type: THREE.PCFSoftShadowMap } : false}
+      shadows={quality !== 'low' ? { type: THREE.PCFShadowMap } : false}
       dpr={dpr}
       gl={{ antialias: quality !== 'low', powerPreference: 'high-performance' }}
       camera={{ fov: 42, near: 0.1, far: 400, position: [0, 8.6, 9.4] }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.05;
+        gl.toneMappingExposure = 1.2;
       }}
       onPointerMissed={() => useGame.getState().deselect()}
     >

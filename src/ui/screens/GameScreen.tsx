@@ -316,6 +316,11 @@ export function GameScreen({ onMenu, onSettings, onPlayAgain }: { onMenu: () => 
   const { setView, reset } = useView();
   const soundOn = useSettings((x) => x.soundOn);
   useEffect(() => setPanelOpen(!narrow), [narrow]);
+  // Keep the board clear of the desktop side panel.
+  useEffect(() => {
+    useView.setState({ panelOffset: panelOpen && !narrow ? 314 : 0 }); // px: panel width + margin
+    return () => useView.setState({ panelOffset: 0 });
+  }, [panelOpen, narrow]);
 
   const top: Color = s.orientation === 'w' ? 'b' : 'w';
   const bottom: Color = s.orientation;

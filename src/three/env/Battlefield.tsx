@@ -250,13 +250,13 @@ export function Battlefield() {
   return (
     <>
       <Sky />
-      <fog attach="fog" args={['#7a5a48', 18, lo ? 70 : 110]} />
-      <hemisphereLight args={['#ffd9b0', '#3a2c22', 0.55]} />
-      <ambientLight intensity={0.15} />
+      <fog attach="fog" args={['#8d6a52', 22, lo ? 75 : 120]} />
+      <hemisphereLight args={['#ffe2c0', '#4a3a2c', 1.1]} />
+      <ambientLight intensity={0.25} />
       <directionalLight
         position={[-9, 11, -6]}
-        intensity={2.6}
-        color="#ffcf9a"
+        intensity={3.4}
+        color="#ffd6a8"
         castShadow={!lo}
         shadow-mapSize-width={hi ? 2048 : 1024}
         shadow-mapSize-height={hi ? 2048 : 1024}

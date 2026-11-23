@@ -30,7 +30,7 @@ export const UnitGlyph = ({ type, className, title }: P & { type: PieceSymbol })
     k: <path d="M11 1h2v3h3v2h-3v2l3 2 2-3 2 2-2 9H6L4 9l2-2 2 3 3-2V6H8V4h3zM5 20h14v3H5z" />,
   };
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} role="img" aria-label={title ?? UNIT_NAMES[type]}>
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" className={className} role="img" aria-label={title ?? UNIT_NAMES[type]}>
       {paths[type]}
     </svg>
   );
@@ -46,7 +46,7 @@ export const UNIT_NAMES: Record<PieceSymbol, string> = {
 };
 
 const I = (d: string) => ({ className }: P) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden style={{ flex: 'none', verticalAlign: 'middle' }}>
     <path d={d} />
   </svg>
 );
@@ -71,14 +71,14 @@ export const Icon = {
 };
 
 export const Crest = ({ className }: P) => (
-  <svg viewBox="0 0 64 64" className={className} fill="none" stroke="currentColor" strokeWidth="2">
+  <svg viewBox="0 0 64 64" width="84" height="84" className={className} fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M32 4l22 8v18c0 14-10 24-22 30C20 54 10 44 10 30V12z" />
     <path d="M32 14l4 8h8l-6 6 2 9-8-5-8 5 2-9-6-6h8z" fill="currentColor" stroke="none" />
   </svg>
 );
 
 export const Logo = ({ className }: P) => (
-  <svg viewBox="0 0 64 64" className={className}>
+  <svg viewBox="0 0 64 64" width="30" height="30" className={className}>
     <path d="M32 6l6 10h-4v6h8v6h-8v14h8l4 10H18l4-10h8V28h-8v-6h8v-6h-4z" fill="#d4a93a" />
   </svg>
 );
