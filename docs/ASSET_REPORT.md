@@ -186,3 +186,64 @@ The test poses:
 All four have 0 unweighted vertices and max 4 influences. **Known:** the SUN_Knight's 92 mm is shoulder-skin stretch at the full rear, a real joint deformation. It isn't visible in renders.
 
 **All 12 characters are now rigged.**
+
+---
+
+# Phase 6: Animation library and GLB export
+
+Pipeline: `tools/blender/animate_export.py` (authoring + export), then `node tools/build_manifest.mjs`.
+
+## Clips (30 fps)
+
+| Skeleton | Clips |
+|---|---|
+| Humanoid (8) | Idle 2.0 s (loop), Walk 1.0 s (loop), Attack 0.9 s, Hit 0.5 s, Death 1.5 s, Victory 1.5 s, Defend 1.0 s (loop) |
+| Horse + rider (2) | Idle 2.0 s, Walk 1.2 s (trot, diagonal pairs), Gallop 0.67 s (transverse), Attack 1.2 s (rear + sabre strike), Hit, Death, Victory |
+| Elephant (2) | Idle 3.0 s (ear flap, trunk sway), Walk 1.33 s (lateral sequence), Attack 1.2 s (trunk raise, front stomp), Hit, Death, Victory |
+
+**Attack styles per character:**
+- **Pawn:** spear thrust. The forearm counter-rotates so the upright spear comes down level.
+- **Queen:** overhead sabre slash.
+- **Bishop:** staff raised and struck forward.
+- **King:** commanding strike with a raised arm. His sword stays in its scabbard.
+
+**Death:** the knees buckle. Hip translation is computed so the feet stay planted; the game then topples and sinks the unit.
+
+**Authoring conventions:**
+- Clips are authored as world-axis rotations and converted into each bone's rest frame, so motions are independent of bone roll.
+- Every clip keys every joint, so three.js cross-fades never leave a bone stuck in the previous clip's pose.
+- All clips are in place. The game moves the unit's root between squares.
+
+## Export
+- One GLB per character, with mesh, skeleton, skin weights (≤4), material, embedded textures and all clips (`export_animation_mode='NLA_TRACKS'`).
+- Textures are downsized to 1024² and stored as WebP (quality 82) on temporary copies; the production `.blend` files keep the 2048² originals.
+- Only the active scene's rig and game mesh are exported, never the `_SRC` high-poly copy. An early run that exported every scene into each file was caught by the size check (34 MB each) and fixed.
+- Location: `public/assets/chess-pieces/<army>/<piece>/<ARMY>_<Piece>.glb`. Total about 24 MB for all 12 (1.6–2.8 MB each), down from 210 MB of source.
+
+## Manifest (`public/assets/chess-pieces/manifest.json`)
+Per piece: file, size, skeleton type, joint count, clips (duration and loop flag), source height, footprint, board scale and material name.
+
+Board heights:
+
+| Piece | Squares tall |
+|---|---|
+| King | 1.00 |
+| Knight | 0.95 |
+| Queen | 0.92 |
+| Bishop | 0.86 |
+| Rook | 0.86 |
+| Pawn | 0.72 |
+
+The rooks are kept lower so the elephant's length fits in one square.
+
+## Tests (`tests/assets.test.ts`, 73 checks)
+- 12 pieces, 6 per army, no duplicates
+- size budget
+- one skinned mesh and one skin per file
+- ≤4 influences, with normalised weights
+- full clip set, with every joint animated in every clip
+- three WebP textures at ≤1024²
+- grounded at y = 0, with the manifest height matching
+- footprint fits inside one square
+
+The tests caught the Shadow elephant overlapping the next square (1.009) at the first board height; fixed by lowering rook height.
