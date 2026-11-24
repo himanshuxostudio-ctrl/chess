@@ -132,3 +132,57 @@ All characters: 0 unweighted vertices, max 4 influences.
 - **SHADOW_King:** in the walk, the curved sword lies fused against the trouser front, giving a 96 mm local stretch. It isn't visible in renders.
 - **Bishops:** their attack test keeps the book arm still, which matches their staff-strike animation. The book arm is still exercised by the walk and stress poses.
 - **Splitting cost:** region splitting adds 0.5–4% vertices along the separation seams.
+
+---
+
+# Phase 4–5: Animal skeletons and rigging (Knight and Rook, both armies)
+
+Pipeline: `tools/blender/rig_quadruped.py`. It reuses the QA and render helpers from `rig_humanoid.py`.
+
+## Preparation fixes found while rigging
+- **Knight heading:** both knight models stood about 40–51° off the board axis (the horse was posed at an angle). `prep_models.py` now finds the horse's heading automatically and turns it to face forward: the principal axis of the barrel, with the head end identified by the neck/head mass. Applied: SUN −50.9°, SHADOW −38.5°. The elephants were already aligned.
+- **Animal pivots:** now the median of the leg-and-barrel band. The rider's out-thrust sabre had moved the bounding-box centre by about 27 cm.
+
+## Horse + rider (39 bones)
+- **Horse:**
+  - Root, Pelvis, Spine1, Spine2, Neck1, Neck2, Head
+  - Tail1–3
+  - 4 legs × 4 bones (Upper, Fore, Cannon, Hoof)
+- **Rider:** RiderSpine, Chest, Neck, Head; both arms (Arm, ForeArm, Hand); a two-bone cape. The chain is parented to a **Saddle** bone on Spine1.
+- **Attachment:** the rider's seat and legs are fused to the horse, so they are weighted to the horse's back and Saddle. The rider follows every horse movement and cannot slide or detach.
+- **Sabre:** rigid to RiderHand_R, along a line fitted to the blade vertices.
+
+## War elephant (30 bones)
+- **Body:** Root, Pelvis, Spine1, Neck, Head
+- **Trunk:** Trunk1–4
+- **Ears:** Ear_L, Ear_R
+- **Tail:** Tail1–2
+- **Legs:** 4 × 4 bones (Upper, Lower, Foot, Sole)
+- **Howdah:** a bone on Spine1 that carries the howdah, mahout, spear and banner rigidly. The tusks are rigid to Head.
+- **Trunk weight zone:** head influence fades out of the hanging trunk column below the trunk root, so the trunk swings freely without tearing at the tusk roots.
+
+## Region separation (animal families)
+Pairs that are split apart:
+- rider (arms, waist) vs horse legs / tail / neck / body
+- rider cape vs croup
+- tail vs hind legs
+- trunk, ears and head vs legs
+- leg vs leg
+- the caparison "skirt" (body cloth below 0.75 m on the horse, 0.6 m on the elephant) vs legs, so the cloth hangs from the body instead of kicking with the legs
+
+## Deformation QA (game-range poses)
+
+| Character | Verts | Gallop / Walk | Attack | Turn |
+|---|---|---|---|---|
+| SUN_Knight | 20,665 | 0.17%, max 62 mm | 0.29%, max 92 mm | 0.02%, max 34 mm |
+| SHADOW_Knight | 20,163 | 0.10%, max 50 mm | 0.17%, max 60 mm | 0.05%, max 22 mm |
+| SUN_Rook | 20,330 | 0.06%, max 23 mm | 0.06%, max 56 mm | 0.01%, max 27 mm |
+| SHADOW_Rook | 20,405 | 0.10%, max 25 mm | 0.14%, max 80 mm | 0.03%, max 37 mm |
+
+The test poses:
+- **Knight attack:** a rear (pelvis −12°, foreleg −45°, forearm +60°) with the sabre arm raised.
+- **Elephant attack:** a trunk swing of about 90° in total, with the ears flared.
+
+All four have 0 unweighted vertices and max 4 influences. **Known:** the SUN_Knight's 92 mm is shoulder-skin stretch at the full rear, a real joint deformation. It isn't visible in renders.
+
+**All 12 characters are now rigged.**

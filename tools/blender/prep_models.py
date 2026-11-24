@@ -94,6 +94,23 @@ def prep_one(key):
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
     bm.to_mesh(me); bm.free()
 
+    # 2b. Horses: the source poses the horse at an angle. Find its heading (principal axis of the
+    #     barrel; head = the end carrying the tall neck/head mass) and turn it to face -Y (forward).
+    #     Elephants are verified facing -Y already; their tall mass is the howdah, so this test would misfire.
+    if kind == "horse":
+        import numpy as np
+        co = np.empty(len(me.vertices) * 3); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
+        zmin, zmax = co[:, 2].min(), co[:, 2].max(); hh = zmax - zmin
+        band = co[(co[:, 2] > zmin + 0.30 * hh) & (co[:, 2] < zmin + 0.50 * hh)][:, :2]
+        c = band.mean(0); w, v = np.linalg.eigh(np.cov((band - c).T)); ax = v[:, np.argmax(w)]
+        proj = (co[co[:, 2] > zmin + 0.55 * hh][:, :2] - c) @ ax
+        far = proj[np.abs(proj) > 0.25]
+        head = ax * (1 if (far > 0).sum() > (far < 0).sum() else -1)
+        yaw = math.atan2(head[0], -head[1])
+        me.transform(mathutils.Matrix.Rotation(-yaw, 4, 'Z'))
+        me.update()
+        o["awc_heading_fix_deg"] = round(math.degrees(-yaw), 2)
+
     # 3. pivot on the ground: humanoids centred over the feet, animals over the bounding box
     mn, mx = _bounds(me)
     h = mx.z - mn.z
@@ -104,7 +121,10 @@ def prep_one(key):
         xs = sorted(p[0] for p in band); ys = sorted(p[1] for p in band)
         cx, cy = xs[len(xs) // 2], ys[len(ys) // 2]
     else:
-        cx, cy = (mn.x + mx.x) / 2, (mn.y + mx.y) / 2
+        # Animals: median of the body band (legs + barrel), immune to swords, capes and banners.
+        band = [v.co for v in me.vertices if mn.z + 0.20 * h < v.co.z < mn.z + 0.45 * h]
+        xs = sorted(c.x for c in band); ys = sorted(c.y for c in band)
+        cx, cy = xs[len(xs) // 2], ys[len(ys) // 2]
     me.transform(mathutils.Matrix.Translation((-cx, -cy, -mn.z)))
     me.update()
 
@@ -173,6 +193,7 @@ def prep_one(key):
         "tris_src": tris_src, "tris_low": tris_low, "verts_low": len(low.vertices),
         "height_m": round(lo_mx.z - lo_mn.z, 3), "footprint_xy": [round(lo_mx.x - lo_mn.x, 3), round(lo_mx.y - lo_mn.y, 3)],
         "min_z": round(lo_mn.z, 4), "textures": tex, "blend": path,
+        "heading_fix_deg": o.get("awc_heading_fix_deg"),
     }
 
 
