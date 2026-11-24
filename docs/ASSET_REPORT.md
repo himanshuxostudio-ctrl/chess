@@ -80,3 +80,55 @@ Pipeline: `tools/blender/prep_models.py`, run in Blender 5.3 via MCP. One scene 
 - A full board drops from ~6.9 M to ~0.94 M triangles.
 - Visual check: silhouettes, props, jewellery and textures are preserved at board and close-up scale. Minor faceting around eyes and lips in close-up; fixable by baking a normal map from `_SRC` if needed.
 - Textures are still 2048². Downsizing and compression happen at GLB export (Phase 6/9).
+
+---
+
+# Phase 4–5: Humanoid skeletons and rigging (8 of 12 characters)
+
+Pipeline: `tools/blender/rig_humanoid.py` (Blender 5.3 via MCP). Outputs: `<ARMY>_<Piece>_rigged.blend` per character.
+
+## Skeleton (shared structure, fitted per model)
+32 bones, Mixamo-style names for retargeting:
+- Root, Hips, Spine, Spine1, Spine2, Neck, Head
+- Left/Right Shoulder, Arm, ForeArm, Hand
+- Left/Right UpLeg, Leg, Foot, ToeBase
+- Three cape chains (Cape1–3 centre, CapeL1–3, CapeR1–3) hanging from Spine2
+
+Fingers are omitted: every hand is fused around a weapon, staff, book or shield grip, so finger bones would have nothing to deform.
+
+Sun and Shadow use the same structure, but every model gets its own joint positions. The pairs are separate generations: silhouette overlap is 60–94%, so copying joints between them would misplace them.
+
+## Binding method
+1. **Landmarks:** joints read from gridded orthographic renders. Limb depth comes from the mesh surface; hips, knees and shoulders follow rules where robes or shields hide the real surface.
+2. **Heat weights:** Blender automatic weights.
+3. **Rigid props:** fused weapons and shields locked 100% to one bone by measured regions:
+   - spears, sabres and staffs follow their tilt or blade diagonal
+   - shields are defined as discs
+4. **Weight smoothing:** props are masked out so they stay rigid.
+5. **Region separation for fused AI meshes:**
+   - each face is labelled by bone family (upper arm, forearm/hand, leg, cape, lower torso, body, prop)
+   - seams between incompatible regions are split
+   - each vertex keeps only weights compatible with its new region; empty vertices refill from neighbours
+   - result: hands no longer fuse to thighs, elbows to capes, cape hems to hips, or scabbards and books to the body
+6. **Final weights:** ≤4 influences, normalised.
+
+## Deformation QA
+Automated edge-stretch measurement at rest, walk (22°/18° stride), attack (60° arm raise), twist (25° spine, 30° head, cape) and a stress pose. A "visible tear" is an edge stretched more than 1.6× **and** lengthened by more than 1 cm. Every pose was also rendered and checked by eye.
+
+| Character | Verts | Walk | Attack | Twist |
+|---|---|---|---|---|
+| SUN_Pawn | 12,140 | 0.02%, max 26 mm | 0.14%, max 79 mm | 0.13%, max 33 mm |
+| SUN_King | 15,048 | 0.26%, max 80 mm | 0.20%, max 55 mm | 0.28%, max 48 mm |
+| SUN_Queen | 15,370 | 0.19%, max 34 mm | 0.04%, max 40 mm | 0.57%, max 57 mm |
+| SUN_Bishop | 15,500 | 0.24%, max 53 mm | 0.08%, max 54 mm | 0.22%, max 30 mm |
+| SHADOW_Pawn | 12,442 | 0.13%, max 26 mm | 0.11%, max 56 mm | 0.15%, max 35 mm |
+| SHADOW_King | 15,123 | 0.30%, max 96 mm | 0.12%, max 65 mm | 0.48%, max 80 mm |
+| SHADOW_Queen | 15,334 | 0.15%, max 40 mm | 0.07%, max 41 mm | 0.50%, max 58 mm |
+| SHADOW_Bishop | 15,580 | 0.31%, max 50 mm | 0.12%, max 51 mm | 0.17%, max 44 mm |
+
+All characters: 0 unweighted vertices, max 4 influences.
+
+**Known limitations**
+- **SHADOW_King:** in the walk, the curved sword lies fused against the trouser front, giving a 96 mm local stretch. It isn't visible in renders.
+- **Bishops:** their attack test keeps the book arm still, which matches their staff-strike animation. The book arm is still exercised by the walk and stress poses.
+- **Splitting cost:** region splitting adds 0.5–4% vertices along the separation seams.
