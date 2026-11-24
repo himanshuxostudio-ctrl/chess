@@ -98,9 +98,11 @@ def prep_one(key):
     mn, mx = _bounds(me)
     h = mx.z - mn.z
     if kind == "humanoid":
-        feet = [v.co for v in me.vertices if v.co.z < mn.z + 0.04 * h]
-        cx = (min(c.x for c in feet) + max(c.x for c in feet)) / 2
-        cy = (min(c.y for c in feet) + max(c.y for c in feet)) / 2
+        # Centre on the median of the torso band: the body holds most vertices, while thin props
+        # (spears, staffs, swords) and ground-dragging capes barely move a median.
+        band = sorted((v.co.x, v.co.y) for v in me.vertices if mn.z + 0.45 * h < v.co.z < mn.z + 0.80 * h)
+        xs = sorted(p[0] for p in band); ys = sorted(p[1] for p in band)
+        cx, cy = xs[len(xs) // 2], ys[len(ys) // 2]
     else:
         cx, cy = (mn.x + mx.x) / 2, (mn.y + mx.y) / 2
     me.transform(mathutils.Matrix.Translation((-cx, -cy, -mn.z)))

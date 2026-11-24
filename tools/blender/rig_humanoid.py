@@ -52,14 +52,13 @@ DEFORM_EXCLUDE = {"Root"}
 # Per-character landmarks. torso entries are (x, y, z); limb entries are (x, z) with y derived.
 LANDMARKS = {
     "PAWN": {
+        "origin": (-0.0055, -0.1208),  # measured with the old feet-centred pivot
         "torso": {
             "hips": (0, 0.12, 0.96), "spine": (0, 0.13, 1.10), "chest": (0, 0.14, 1.26), "upper_chest": (0, 0.14, 1.38),
             "neck": (0, 0.12, 1.50), "head": (0, 0.10, 1.57), "head_top": (0, 0.10, 1.80),
             "clav_L": (0.05, 0.13, 1.46), "clav_R": (-0.05, 0.13, 1.46),
             "cape0": (0, 0.27, 1.40), "cape1": (0, 0.31, 1.08), "cape2": (0, 0.32, 0.76), "cape3": (0, 0.33, 0.44),
         },
-        # Geometry behind this plane and below the shoulders is cape: it never follows the arms.
-        "cape_plane": {"y": 0.21, "z_max": 1.30},
         # side cape chains: x offset from centre, and depth pulled forward as the cape wraps
         "cape_side": {"dx": 0.24, "dy": -0.06},
         "limbs": {
@@ -75,7 +74,76 @@ LANDMARKS = {
             ("LeftForeArm", "x > 0.255 and 0.62 < z < 1.30"),                       # round shield
         ],
     },
+    "KING": {
+        "origin": (0.0159, 0.0085),
+        "torso": {
+            "hips": (0, -0.09, 1.00), "spine": (0, -0.09, 1.14), "chest": (0, -0.08, 1.30), "upper_chest": (0, -0.08, 1.43),
+            "neck": (0, -0.08, 1.56), "head": (0, -0.09, 1.64), "head_top": (0, -0.09, 1.87),
+            "clav_L": (0.05, -0.08, 1.50), "clav_R": (-0.05, -0.08, 1.50),
+            "cape0": (0, 0.06, 1.48), "cape1": (0, 0.13, 1.08), "cape2": (0, 0.20, 0.62), "cape3": (0, 0.28, 0.18),
+        },
+        "cape_side": {"dx": 0.30, "dy": -0.05},
+        "limbs": {
+            "shoulder_L": (0.24, 1.45), "elbow_L": (0.33, 1.24), "wrist_L": (0.37, 1.00), "hand_L": (0.38, 0.86),
+            "shoulder_R": (-0.24, 1.45), "elbow_R": (-0.33, 1.24), "wrist_R": (-0.38, 1.00), "hand_R": (-0.39, 0.86),
+            "hip_L": (0.10, 0.97), "knee_L": (0.14, 0.52), "ankle_L": (0.17, 0.11), "ball_L": (0.17, 0.04), "toe_L": (0.17, 0.02),
+            "hip_R": (-0.10, 0.97), "knee_R": (-0.14, 0.52), "ankle_R": (-0.22, 0.11), "ball_R": (-0.22, 0.04), "toe_R": (-0.22, 0.02),
+        },
+        "rigid": [
+            # sword in its scabbard, hanging diagonally from the belt on the left hip
+            ("Hips", "0.38 < z < 1.20 and abs(x - (0.12 + (1.18 - z) * 0.35)) < 0.045 and abs(y - (-0.30 + (1.19 - z) * 0.457)) < (0.05 if z > 0.55 else 0.03)"),
+        ],
+    },
+    "QUEEN": {
+        "origin": (-0.0274, -0.0067),
+        "torso": {
+            "hips": (0, -0.04, 0.98), "spine": (0, -0.04, 1.13), "chest": (0, -0.04, 1.30), "upper_chest": (0, -0.04, 1.42),
+            "neck": (0, -0.03, 1.57), "head": (0, -0.04, 1.64), "head_top": (0, -0.04, 1.85),
+            "clav_L": (0.05, -0.03, 1.52), "clav_R": (-0.05, -0.03, 1.52),
+            "cape0": (0, 0.08, 1.48), "cape1": (0, 0.14, 1.05), "cape2": (0, 0.22, 0.62), "cape3": (0, 0.30, 0.20),
+        },
+        "cape_side": {"dx": 0.30, "dy": -0.05},
+        "limbs": {
+            "shoulder_L": (0.20, 1.50), "elbow_L": (0.24, -0.02, 1.25), "wrist_L": (0.27, -0.08, 1.10), "hand_L": (0.28, -0.10, 1.04),
+            "shoulder_R": (-0.21, 1.50), "elbow_R": (-0.29, 1.23), "wrist_R": (-0.35, 1.03), "hand_R": (-0.37, 0.92),
+            "hip_L": (0.09, 0.95), "knee_L": (0.12, 0.52), "ankle_L": (0.14, 0.11), "ball_L": (0.14, 0.04), "toe_L": (0.14, 0.02),
+            "hip_R": (-0.09, 0.95), "knee_R": (-0.12, 0.52), "ankle_R": (-0.17, 0.11), "ball_R": (-0.17, 0.04), "toe_R": (-0.17, 0.02),
+        },
+        "rigid": [
+            ("LeftForeArm", "x > 0.215 and (y + 0.10) ** 2 + (z - 1.09) ** 2 < 0.21 ** 2"),         # round shield (disc seen from the side)
+            ("RightHand", "x < -0.33 and 0.30 < z < 1.02 and y < -0.24 - (0.73 - z) * 1.5 + 0.06"),  # sword: follows the blade diagonal (side view)
+        ],
+    },
+    "BISHOP": {
+        "origin": (-0.1169, 0.0285),
+        "torso": {
+            "hips": (0.17, 0.08, 1.00), "spine": (0.17, 0.08, 1.15), "chest": (0.18, 0.08, 1.30), "upper_chest": (0.18, 0.08, 1.40),
+            "neck": (0.19, 0.07, 1.52), "head": (0.20, 0.07, 1.60), "head_top": (0.20, 0.07, 1.86),
+            "clav_L": (0.22, 0.08, 1.47), "clav_R": (0.12, 0.08, 1.47),
+            "cape0": (0.17, 0.18, 1.45), "cape1": (0.17, 0.24, 1.05), "cape2": (0.17, 0.30, 0.62), "cape3": (0.17, 0.36, 0.20),
+        },
+        "cape_side": {"dx": 0.30, "dy": -0.05},
+        "limbs": {
+            "shoulder_L": (0.36, 1.47), "elbow_L": (0.40, 1.20), "wrist_L": (0.36, -0.02, 1.27), "hand_L": (0.31, -0.06, 1.30),
+            "shoulder_R": (-0.02, 1.47), "elbow_R": (-0.07, 1.20), "wrist_R": (-0.16, 1.28), "hand_R": (-0.22, 1.30),
+            "hip_L": (0.25, 0.95), "knee_L": (0.27, 0.52), "ankle_L": (0.27, 0.11), "ball_L": (0.27, 0.04), "toe_L": (0.27, 0.02),
+            "hip_R": (0.09, 0.95), "knee_R": (0.07, 0.52), "ankle_R": (0.05, 0.11), "ball_R": (0.05, 0.04), "toe_R": (0.05, 0.02),
+        },
+        # The Bishop strikes with the staff (right arm); the book arm stays still in his attack.
+        "pose_overrides": {"attack": {"LeftArm": (0, 0, 0), "LeftForeArm": (0, 0, 0)}},
+        "rigid": [
+            ("RightHand", "x < -0.13 - 0.035 * z"),                       # sun staff (leans slightly) + sleeve
+            ("LeftHand", "x > 0.31 and 1.24 < z < 1.48 and y < -0.04"),    # book held to the chest
+        ],
+    },
 }
+
+
+def _pred(cond, lm):
+    """Compile a rigid-region predicate written in the landmark frame (see "origin")."""
+    ox, oy = lm.get("origin", (0.0, 0.0))
+    f = eval(f"lambda x, y, z: {cond}")
+    return lambda x, y, z: f(x - ox, y - oy, z)
 
 
 def _limb_y(me_verts, x, z, wx=0.045, wz=0.035):
@@ -94,10 +162,16 @@ def _limb_y(me_verts, x, z, wx=0.045, wz=0.035):
 def build_rig(scene, mesh_obj, key):
     lm = LANDMARKS[key]
     verts = [mesh_obj.matrix_world @ v.co for v in mesh_obj.data.vertices]
-    P = {k: Vector(v) for k, v in lm["torso"].items()}
+    ox, oy = lm.get("origin", (0.0, 0.0))
+    shift = lambda v: Vector((v[0] + ox, v[1] + oy, v[2]))
+    P = {k: shift(v) for k, v in lm["torso"].items()}
     for k, v in lm["limbs"].items():
         # (x, y, z) = explicit depth (e.g. an arm hidden behind a shield); (x, z) = derive from surface
-        P[k] = Vector(v) if len(v) == 3 else Vector((v[0], _limb_y(verts, v[0], v[1]), v[1]))
+        if len(v) == 3:
+            P[k] = shift(v)
+        else:
+            x = v[0] + ox
+            P[k] = Vector((x, _limb_y(verts, x, v[1]), v[1]))
     for s in ("L", "R"):
         # Hip joints sit in the pelvis, not at the front of flared trousers / robes.
         if len(lm["limbs"][f"hip_{s}"]) == 2:
@@ -173,7 +247,7 @@ def bind(scene, mesh_obj, rig, key):
 
     rigid_count = {}
     for bone, cond in LANDMARKS[key]["rigid"]:
-        f = eval(f"lambda x, y, z: {cond}")
+        f = _pred(cond, LANDMARKS[key])
         idx = [v.index for v in me.vertices if f(*v.co)]
         for g in mesh_obj.vertex_groups:
             g.remove(idx)
@@ -195,7 +269,7 @@ def bind(scene, mesh_obj, rig, key):
     # 1. Smooth body weights; rigid props are masked out so they stay perfectly rigid.
     rigid_idx = set()
     for bone, cond in LANDMARKS[key]["rigid"]:
-        f = eval(f"lambda x, y, z: {cond}")
+        f = _pred(cond, LANDMARKS[key])
         rigid_idx.update(v.index for v in me.vertices if f(*v.co))
     for v in me.vertices:
         v.select = v.index not in rigid_idx
@@ -216,10 +290,32 @@ def bind(scene, mesh_obj, rig, key):
     from collections import Counter
     from mathutils.geometry import intersect_point_line as _ipl
     FAMILY = {}
-    for n in ARM: FAMILY[n] = "ARM"
+    for n in ARM: FAMILY[n] = "ARM_LOW" if n in ARM_END else "ARM_UP"
     for n in LEG: FAMILY[n] = "LEG"
     for n in CAPE: FAMILY[n] = "CAPE"
-    BAD = {frozenset(("ARM", "LEG")), frozenset(("ARM", "CAPE")), frozenset(("LEG", "CAPE"))}
+    for n in ("Hips", "Spine"): FAMILY[n] = "TORSO_LOW"
+    BAD = {frozenset(p) for p in (
+        ("ARM_UP", "LEG"), ("ARM_LOW", "LEG"), ("ARM_UP", "CAPE"), ("ARM_LOW", "CAPE"), ("LEG", "CAPE"),
+        ("ARM_LOW", "TORSO_LOW"),                 # hands/forearms resting on hips & belt
+        ("ARM_UP", "TORSO_LOW"),                  # elbows/sleeves hanging against the hips
+        ("CAPE", "TORSO_LOW"))}                   # capes hang from the shoulders, free of the waist
+
+    def _base(f):
+        return f[2:] if f.startswith("P:") else f
+
+    def is_bad(f1, f2):
+        """Face-family incompatibility. 'P:<fam>' = a fused prop rigid to a bone of family <fam>:
+        it inherits that family's rules and also parts from legs, capes and (if hand-held) the torso."""
+        if frozenset((_base(f1), _base(f2))) in BAD:
+            return True
+        for p, o in ((f1, f2), (f2, f1)):
+            if p.startswith("P:") and not o.startswith("P:"):
+                ob = _base(o)
+                if ob in ("LEG", "CAPE"):
+                    return True
+                if _base(p) == "ARM_LOW" and ob in ("BODY", "TORSO_LOW", "ARM_UP"):
+                    return True
+        return False
     gname = {g.index: g.name for g in mesh_obj.vertex_groups}
     gindex = {v: k for k, v in gname.items()}
     fam_of = lambda gi: FAMILY.get(gname[gi], "BODY")
@@ -232,22 +328,24 @@ def bind(scene, mesh_obj, rig, key):
     vf = {v: vfam(v) for v in bm.verts}
     face_fam = {}
     for f in bm.faces:
-        c = Counter(vf[v] for v in f.verts)
-        face_fam[f] = c.most_common(1)[0][0]
+        rig_v = [v for v in f.verts if v.index in rigid_idx]
+        if rig_v:
+            # faces touching a rigid prop belong to the prop, so the seam runs around its edge
+            face_fam[f] = "P:" + vf[rig_v[0]]
+        else:
+            c = Counter(vf[v] for v in f.verts)
+            face_fam[f] = c.most_common(1)[0][0]
     split = [ed for ed in bm.edges if len(ed.link_faces) == 2
-             and frozenset((face_fam[ed.link_faces[0]], face_fam[ed.link_faces[1]])) in BAD]
+             and is_bad(face_fam[ed.link_faces[0]], face_fam[ed.link_faces[1]])]
     if split:
         bmesh.ops.split_edges(bm, edges=split)
     bm.faces.ensure_lookup_table()
     face_fam = {f: face_fam.get(f) for f in bm.faces}  # split keeps face identity
 
+    ALL_FAMS = {"ARM_UP", "ARM_LOW", "LEG", "CAPE", "TORSO_LOW", "BODY"}
     def allowed(fams):
-        banned = set()
-        for f in fams:
-            for pair in BAD:
-                if f in pair:
-                    banned |= set(pair) - {f}
-        return banned
+        """Bone families a vertex may NOT keep, given the face regions it now belongs to."""
+        return {x for f in fams for x in ALL_FAMS if is_bad(f, x)}
     empty = []
     for v in bm.verts:
         if v.index in rigid_idx:
@@ -325,7 +423,7 @@ TEST_POSES = {
 }
 
 
-def pose_test(scene, rig, mesh_obj, out_dir, label):
+def pose_test(scene, rig, mesh_obj, out_dir, label, poses=None):
     """Render each test pose from front and side; returns written files."""
     os.makedirs(out_dir, exist_ok=True)
     cam = scene.camera
@@ -335,7 +433,7 @@ def pose_test(scene, rig, mesh_obj, out_dir, label):
         if o.type == 'MESH':
             o.hide_render = o is not mesh_obj
     files = []
-    for pname, pose in TEST_POSES.items():
+    for pname, pose in (poses or TEST_POSES).items():
         for pb in rig.pose.bones:
             pb.rotation_mode = 'XYZ'
             pb.rotation_euler = pose.get(pb.name, (0, 0, 0))
@@ -351,6 +449,12 @@ def pose_test(scene, rig, mesh_obj, out_dir, label):
         pb.rotation_euler = (0, 0, 0)
     scene.render.resolution_x, scene.render.resolution_y = 480, 640
     return files
+
+
+def poses_for(key):
+    """Test poses with per-character overrides (matching how that character actually animates)."""
+    ov = LANDMARKS[key].get("pose_overrides", {})
+    return {n: {**p, **ov.get(n, {})} for n, p in TEST_POSES.items()}
 
 
 def stretch_report(rig, mesh_obj, poses=None):
@@ -383,3 +487,100 @@ def stretch_report(rig, mesh_obj, poses=None):
     for pb in rig.pose.bones:
         pb.rotation_euler = (0, 0, 0)
     return out
+
+
+def joint_overlay(scene, rig, mesh_obj, path):
+    """Debug render: small spheres at every joint over the body (front + side), to verify fit."""
+    import bmesh as _bm
+    tmp = []
+    mat = bpy.data.materials.get("AWC_JointDebug") or bpy.data.materials.new("AWC_JointDebug")
+    mat.diffuse_color = (0.1, 1.0, 0.3, 1)
+    for b in rig.data.bones:
+        me = bpy.data.meshes.new("jd")
+        bm = _bm.new(); _bm.ops.create_uvsphere(bm, u_segments=8, v_segments=6, radius=0.018); bm.to_mesh(me); bm.free()
+        me.materials.append(mat)
+        o = bpy.data.objects.new("jd", me); o.location = b.head_local; o.show_in_front = True
+        scene.collection.objects.link(o); tmp.append(o)
+    old = scene.display.shading.color_type
+    scene.display.shading.color_type = 'MATERIAL'
+    mesh_obj.hide_render = False
+    mesh_obj.color = (1, 1, 1, 1)
+    scene.display.shading.show_xray = True
+    scene.display.shading.xray_alpha = 0.35
+    cam = scene.camera; cam.data.ortho_scale = 2.1
+    scene.render.resolution_x = scene.render.resolution_y = 700
+    for tag, loc in (("front", (0, -6, 0.95)), ("side", (6, 0, 0.95))):
+        cam.location = loc
+        cam.rotation_euler = (Vector((0, 0, 0.95)) - Vector(loc)).to_track_quat('-Z', 'Y').to_euler()
+        scene.render.filepath = path.replace(".png", f"_{tag}.png")
+        bpy.ops.render.render(write_still=True, scene=scene.name)
+    scene.display.shading.show_xray = False
+    scene.display.shading.color_type = old
+    scene.render.resolution_x, scene.render.resolution_y = 480, 640
+    for o in tmp:
+        me = o.data; bpy.data.objects.remove(o, do_unlink=True); bpy.data.meshes.remove(me)
+
+
+def rig_character(name, key, out_dir):
+    """Full pipeline for one prepared humanoid scene PREP_<name>."""
+    home = bpy.context.window.scene
+    sc = bpy.data.scenes[f"PREP_{name}"]
+    bpy.context.window.scene = sc
+    mesh = sc.objects[name]
+    rig, P = build_rig(sc, mesh, key)
+    info = bind(sc, mesh, rig, key)
+    poses = poses_for(key)
+    qa = stretch_report(rig, mesh, poses)
+    pose_test(sc, rig, mesh, out_dir, name, poses)
+    joint_overlay(sc, rig, mesh, os.path.join(out_dir, f"{name}__joints.png"))
+    bpy.context.window.scene = home
+    n_edges = len(mesh.data.edges)
+    game = {k: qa[k] for k in ("walk", "attack", "twist")}
+    passed = all(v["visible_tear_edges"] / n_edges < 0.01 and v["max_elongation_mm"] < 80 for v in game.values())
+    return {"name": name, "unweighted": info["unweighted_verts"], "rigid": info["rigid"], "split_edges": info["split_edges"],
+            "qa": {k: (v["visible_tear_edges"], v["max_elongation_mm"]) for k, v in qa.items() if k != "rest"}, "pass": passed}
+
+
+def diagnose(name, pose_name, top=4):
+    """Where does a pose tear? Returns the bone pairs of torn edges and the worst edges with weights."""
+    import numpy as np
+    from collections import Counter
+    home = bpy.context.window.scene
+    sc = bpy.data.scenes[f"PREP_{name}"]; bpy.context.window.scene = sc
+    rig, mesh = sc.objects[f"{name}_Rig"], sc.objects[name]
+    me = mesh.data
+    names = {gr.index: gr.name for gr in mesh.vertex_groups}
+    wd = lambda v: {names[e.group]: round(e.weight, 2) for e in v.groups if e.weight > 0.02}
+    e = np.empty(len(me.edges) * 2, dtype=np.int64); me.edges.foreach_get("vertices", e); e = e.reshape(-1, 2)
+    rest = np.empty(len(me.vertices) * 3); me.vertices.foreach_get("co", rest); rest = rest.reshape(-1, 3)
+    rl = np.linalg.norm(rest[e[:, 0]] - rest[e[:, 1]], axis=1)
+    pose = TEST_POSES[pose_name]
+    for pb in rig.pose.bones:
+        pb.rotation_mode = 'XYZ'; pb.rotation_euler = pose.get(pb.name, (0, 0, 0))
+    bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get(); ev = mesh.evaluated_get(dg).to_mesh()
+    co = np.empty(len(ev.vertices) * 3); ev.vertices.foreach_get("co", co); co = co.reshape(-1, 3); mesh.evaluated_get(dg).to_mesh_clear()
+    L = np.linalg.norm(co[e[:, 0]] - co[e[:, 1]], axis=1); grow = L - rl; r = L / (rl + 1e-9)
+    vis = np.where((r > 1.6) & (grow > 0.01))[0]
+    dom = [names[max(v.groups, key=lambda x: x.weight).group] if v.groups else "-" for v in me.vertices]
+    pairs = Counter(tuple(sorted((dom[e[i, 0]], dom[e[i, 1]]))) for i in vis)
+    worst = vis[np.argsort(grow[vis])[::-1][:top]]
+    for pb in rig.pose.bones:
+        pb.rotation_euler = (0, 0, 0)
+    bpy.context.window.scene = home
+    return {"pairs": [(f"{a}|{b}", n) for (a, b), n in pairs.most_common(8)],
+            "worst": [{"mm": round(float(grow[i]) * 1000), "a": [round(float(c), 3) for c in rest[e[i, 0]]], "aw": wd(me.vertices[e[i, 0]]),
+                       "b": [round(float(c), 3) for c in rest[e[i, 1]]], "bw": wd(me.vertices[e[i, 1]])} for i in worst]}
+
+
+def save_rigged(name, out_dir):
+    """Write a standalone production .blend: rig + skinned game mesh + hidden _SRC (never the open file)."""
+    sc = bpy.data.scenes[f"PREP_{name}"]
+    keep = [o for o in sc.objects if o.name in (name, f"{name}_Rig", f"{name}_SRC")]
+    coll = bpy.data.collections.get(f"{name}_RIGGED") or bpy.data.collections.new(f"{name}_RIGGED")
+    for o in keep:
+        if o.name not in coll.objects:
+            coll.objects.link(o)
+    path = os.path.join(out_dir, f"{name}_rigged.blend")
+    bpy.data.libraries.write(path, {coll, sc, *keep}, compress=True)
+    return path
