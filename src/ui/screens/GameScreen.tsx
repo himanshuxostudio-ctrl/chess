@@ -6,6 +6,7 @@ import { REASON_TEXT } from '../../../shared/rules';
 import { useView } from '../../three/CameraRig';
 import { Icon, UnitGlyph, UNIT_NAMES, Crest } from '../components/Icons';
 import { useSettings, ARMY_NAME, armyOf } from '../../config/settings';
+import { inviteBase } from '../../match/prefs';
 import { sound } from '../../audio/sound';
 import { useMediaQuery } from '../useMediaQuery';
 
@@ -216,8 +217,8 @@ export function ResultModal({ onMenu, onPlayAgain }: { onMenu: () => void; onPla
 function OnlineWaiting() {
   const s = useGame();
   const [copied, setCopied] = useState(false);
-  if (s.mode !== 'online' || !s.roomId || s.snapshot?.status !== 'waiting') return null;
-  const link = `${location.origin}/game/${s.roomId}`;
+  if (s.mode !== 'online' || !s.roomId || s.snapshot?.status !== 'waiting' || s.snapshot.hostColor !== s.myColor) return null;
+  const link = `${inviteBase()}/game/${s.roomId}`;
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(link);
@@ -433,7 +434,7 @@ export function GameScreen({ onMenu, onSettings, onPlayAgain }: { onMenu: () => 
                 Claim Draw
               </button>
             )}
-            <button className="btn small danger" onClick={() => setConfirmResign(true)} disabled={s.mode === 'online' && s.snapshot?.status !== 'active'}>
+            <button className="btn small danger" onClick={() => (useSettings.getState().confirmResign ? setConfirmResign(true) : s.resign())} disabled={s.mode === 'online' && s.snapshot?.status !== 'active'}>
               <Icon.flag className="" /> Resign
             </button>
           </>

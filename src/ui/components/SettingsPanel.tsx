@@ -42,22 +42,15 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           <Toggle label="Cinematic camera" hint="Camera follows captures and checks" value={s.cinematicCamera} onChange={(v) => s.set({ cinematicCamera: v })} />
           <Toggle label="Fixed camera" hint="Disable orbit / zoom / pan" value={s.fixedCamera} onChange={(v) => s.set({ fixedCamera: v })} />
           <Toggle label="Show move hints" value={s.showHints} onChange={(v) => s.set({ showHints: v })} />
+          <Toggle label="Confirm before resigning" value={s.confirmResign} onChange={(v) => s.set({ confirmResign: v })} />
           <Toggle label="Rotate board to side to move (pass & play)" value={s.autoRotateBoard} onChange={(v) => s.set({ autoRotateBoard: v })} />
           <Slider label="Animation speed" value={s.animationSpeed} min={0.5} max={2.5} step={0.1} onChange={(v) => s.set({ animationSpeed: v })} fmt={(v) => `${v.toFixed(1)}×`} />
           <Slider label="Camera sensitivity" value={s.cameraSensitivity} min={0.3} max={2} step={0.1} onChange={(v) => s.set({ cameraSensitivity: v })} fmt={(v) => `${v.toFixed(1)}×`} />
           <Slider label="AI thinking time" value={thinkMultiplier} min={0.5} max={3} step={0.25} onChange={(v) => useGame.setState({ thinkMultiplier: v })} fmt={(v) => `${v.toFixed(2)}×`} />
         </div>
         <div className="settings-section">
-          <div className="label">Armies</div>
-          <div className="choice-row" style={{ marginTop: 8 }}>
-            <button className={`chip ${s.whiteArmy === 'sun' ? 'on' : ''}`} onClick={() => s.set({ whiteArmy: 'sun' })}>
-              White: Sun Army
-            </button>
-            <button className={`chip ${s.whiteArmy === 'shadow' ? 'on' : ''}`} onClick={() => s.set({ whiteArmy: 'shadow' })}>
-              White: Shadow Army
-            </button>
-          </div>
-          <div className="label" style={{ marginTop: 12 }}>Character models</div>
+          <p className="muted" style={{ fontSize: 12, margin: '0 0 6px' }}>The Sun Army always commands White and moves first, so every player and spectator sees the same armies. Pick your army when you set up a match.</p>
+          <div className="label">Character models</div>
           <div className="choice-row" style={{ marginTop: 8 }}>
             <button className={`chip ${s.unitModels === 'detailed' ? 'on' : ''}`} onClick={() => s.set({ unitModels: 'detailed' })}>
               Detailed armies

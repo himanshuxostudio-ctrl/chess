@@ -23,7 +23,9 @@ export interface Settings {
   animationSpeed: number; // 0.5 .. 2
   showHints: boolean;
   autoRotateBoard: boolean; // pass & play: rotate view to side to move
-  /** Which army commands the White pieces. */
+  /** Ask before resigning. */
+  confirmResign: boolean;
+  /** Which army commands the White pieces. Fixed to 'sun' since v3 (kept for the helper signature). */
   whiteArmy: ArmyId;
   /** Rigged GLB army characters, or the lightweight procedural units. */
   unitModels: UnitModels;
@@ -51,6 +53,7 @@ export const useSettings = create<Settings>()(
       animationSpeed: 1,
       showHints: true,
       autoRotateBoard: true,
+      confirmResign: true,
       whiteArmy: 'sun',
       unitModels: 'detailed',
       set: (patch) => set(patch),
@@ -58,13 +61,18 @@ export const useSettings = create<Settings>()(
     }),
     {
       name: 'awc-settings',
-      version: 2,
+      version: 3,
       // v1 stored 'hellenic' | 'persian' as the White army
       migrate: (old, version) => {
         const s = (old ?? {}) as Record<string, unknown>;
         if (version < 2) {
           s.whiteArmy = s.whiteArmy === 'persian' ? 'shadow' : 'sun';
           s.unitModels = 'detailed';
+        }
+        // v3: armies are canonical (Sun = White) so online opponents and spectators agree.
+        if (version < 3) {
+          s.whiteArmy = 'sun';
+          s.confirmResign = true;
         }
         return s as unknown as Settings;
       },

@@ -10,6 +10,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSyn
 import { extname, join, normalize, resolve } from 'node:path';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { Room, RoomError, cleanInfo, type PersistedRoom } from './rooms';
+import { normalizeMatch, sanitizeTime } from '../shared/match';
 import { ROOM_ID_RE, type ClientMsg, type ServerMsg, type TimeControl } from '../shared/protocol';
 import type { Color } from '../shared/rules';
 
@@ -41,12 +42,7 @@ const MIME: Record<string, string> = {
   '.woff2': 'font/woff2',
 };
 
-const validTc = (tc: unknown): TimeControl => {
-  const t = tc as TimeControl;
-  const initial = Number.isFinite(t?.initial) ? Math.min(7200, Math.max(0, Math.floor(t.initial))) : 0;
-  const increment = Number.isFinite(t?.increment) ? Math.min(60, Math.max(0, Math.floor(t.increment))) : 0;
-  return { initial, increment };
-};
+const validTc = (tc: unknown): TimeControl => sanitizeTime(tc);
 
 export function startServer(opts: ServerOptions) {
   const rooms = new Map<string, Room>();
@@ -129,7 +125,8 @@ export function startServer(opts: ServerOptions) {
         if (a.queued!.tc.initial === b.queued!.tc.initial && a.queued!.tc.increment === b.queued!.tc.increment) {
           queue.splice(j, 1);
           queue.splice(i, 1);
-          const room = Room.create(a.queued!.tc);
+          // Matchmade games start immediately (both players asked to play now) on a random battlefield.
+          const room = Room.create(normalizeMatch({ timeControl: a.queued!.tc, battlefield: 'random' }), false);
           rooms.set(room.id, room);
           const [w, bl] = Math.random() < 0.5 ? [a, b] : [b, a];
           const tw = room.seat('w', w.queued!.info);
@@ -151,9 +148,12 @@ export function startServer(opts: ServerOptions) {
       case 'ping':
         return send(c, { t: 'pong', at: msg.at, serverTime: Date.now() });
       case 'create': {
-        const room = Room.create(validTc(msg.timeControl));
+        // The server, not the client, owns the match settings: validate + resolve random choices here.
+        const config = normalizeMatch({ ...(msg.match ?? {}), timeControl: msg.match?.timeControl ?? msg.timeControl });
+        const room = Room.create(config, true);
         rooms.set(room.id, room);
         const color: Color = msg.color === 'w' || msg.color === 'b' ? msg.color : Math.random() < 0.5 ? 'w' : 'b';
+        room.data.hostColor = color;
         const token = room.seat(color, cleanInfo(msg));
         return attach(c, room, color, token);
       }
@@ -164,6 +164,7 @@ export function startServer(opts: ServerOptions) {
         // Reconnect / refresh: the secret token identifies the seat.
         const existing = room.colorForToken(msg.token);
         if (existing) return attach(c, room, existing, msg.token!);
+        if (room.data.status === 'cancelled') throw new RoomError('cancelled', 'The host cancelled this invitation');
         const free = room.freeColor();
         if (!free) throw new RoomError('room_full', 'Both commanders are already present. You can watch as a spectator.');
         const token = room.seat(free, cleanInfo(msg));
@@ -173,7 +174,14 @@ export function startServer(opts: ServerOptions) {
         if (typeof msg.roomId !== 'string' || !ROOM_ID_RE.test(msg.roomId)) throw new RoomError('bad_request', 'Invalid room link');
         const room = rooms.get(msg.roomId);
         if (!room) throw new RoomError('not_found', 'This battle no longer exists');
+        if (!room.data.config.allowSpectators) throw new RoomError('forbidden', 'The commanders of this battle do not allow spectators');
         return attach(c, room, null, null);
+      }
+      case 'peek': {
+        if (typeof msg.roomId !== 'string' || !ROOM_ID_RE.test(msg.roomId)) throw new RoomError('bad_request', 'Invalid room link');
+        const room = rooms.get(msg.roomId);
+        if (!room) throw new RoomError('not_found', 'This battle no longer exists');
+        return send(c, { t: 'peek', snapshot: room.snapshot() });   // public data only — tokens never leave the server
       }
       case 'queue': {
         if (queue.includes(c)) return;
@@ -200,6 +208,12 @@ export function startServer(opts: ServerOptions) {
         const snap = room.snapshot();
         return broadcast(room, () => ({ t: 'moved', uci: msg.uci, ply: msg.ply, snapshot: snap }));
       }
+      case 'ready':
+        room.setReady(color);
+        return broadcastState(room);
+      case 'cancel':
+        room.cancel(color);
+        return broadcastState(room);
       case 'resign':
         room.resign(color);
         return broadcastState(room);
@@ -214,10 +228,11 @@ export function startServer(opts: ServerOptions) {
         return broadcastState(room);
       case 'rematch': {
         if (room.data.status !== 'over') throw new RoomError('bad_request', 'Game still running');
+        if (!room.data.config.allowRematch) throw new RoomError('forbidden', 'Rematches are disabled for this battle');
         if (room.data.rematchRoomId) return;
         if (room.data.rematchBy && room.data.rematchBy !== color) {
           // Both agreed: new room with colours swapped.
-          const next = Room.create(room.data.timeControl);
+          const next = Room.create(room.data.config, false);   // same settings, both already agreed
           rooms.set(next.id, next);
           room.data.rematchRoomId = next.id;
           const sw = room.data.seats;
