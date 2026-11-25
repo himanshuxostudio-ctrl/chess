@@ -1,0 +1,556 @@
+{
+  "version": 1,
+  "conventions": {
+    "forward": "+Z (glTF)",
+    "up": "+Y",
+    "pivot": "ground (y=0) under the body centre",
+    "units": "source metres; multiply by `scale` for board units (1 square = 1)",
+    "clips": "every clip keys every joint, so cross-fading never leaves a bone in a stale pose"
+  },
+  "pieces": {
+    "sun_king": {
+      "army": "sun",
+      "piece": "king",
+      "file": "/assets/chess-pieces/sun/king/SUN_King.glb",
+      "bytes": 1921964,
+      "skeleton": "humanoid",
+      "joints": 32,
+      "clips": {
+        "Idle": {
+          "seconds": 2.5,
+          "loop": true
+        },
+        "Walk": {
+          "seconds": 1.25,
+          "loop": true
+        },
+        "Attack": {
+          "seconds": 1.125,
+          "loop": false
+        },
+        "Hit": {
+          "seconds": 0.625,
+          "loop": false
+        },
+        "Death": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Victory": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Defend": {
+          "seconds": 1.25,
+          "loop": true
+        }
+      },
+      "sourceHeight": 1.897,
+      "footprint": {
+        "x": 1.094,
+        "z": 0.716
+      },
+      "scale": 0.5272,
+      "boardHeight": 1,
+      "material": "SUN_King_MAT"
+    },
+    "sun_queen": {
+      "army": "sun",
+      "piece": "queen",
+      "file": "/assets/chess-pieces/sun/queen/SUN_Queen.glb",
+      "bytes": 1860988,
+      "skeleton": "humanoid",
+      "joints": 32,
+      "clips": {
+        "Idle": {
+          "seconds": 2.5,
+          "loop": true
+        },
+        "Walk": {
+          "seconds": 1.25,
+          "loop": true
+        },
+        "Attack": {
+          "seconds": 1.125,
+          "loop": false
+        },
+        "Hit": {
+          "seconds": 0.625,
+          "loop": false
+        },
+        "Death": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Victory": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Defend": {
+          "seconds": 1.25,
+          "loop": true
+        }
+      },
+      "sourceHeight": 1.899,
+      "footprint": {
+        "x": 1.154,
+        "z": 1.204
+      },
+      "scale": 0.4845,
+      "boardHeight": 0.92,
+      "material": "SUN_Queen_MAT"
+    },
+    "sun_bishop": {
+      "army": "sun",
+      "piece": "bishop",
+      "file": "/assets/chess-pieces/sun/bishop/SUN_Bishop.glb",
+      "bytes": 1877396,
+      "skeleton": "humanoid",
+      "joints": 32,
+      "clips": {
+        "Idle": {
+          "seconds": 2.5,
+          "loop": true
+        },
+        "Walk": {
+          "seconds": 1.25,
+          "loop": true
+        },
+        "Attack": {
+          "seconds": 1.125,
+          "loop": false
+        },
+        "Hit": {
+          "seconds": 0.625,
+          "loop": false
+        },
+        "Death": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Victory": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Defend": {
+          "seconds": 1.25,
+          "loop": true
+        }
+      },
+      "sourceHeight": 1.899,
+      "footprint": {
+        "x": 1.11,
+        "z": 0.828
+      },
+      "scale": 0.453,
+      "boardHeight": 0.86,
+      "material": "SUN_Bishop_MAT"
+    },
+    "sun_knight": {
+      "army": "sun",
+      "piece": "knight",
+      "file": "/assets/chess-pieces/sun/knight/SUN_Knight.glb",
+      "bytes": 2387612,
+      "skeleton": "horse+rider",
+      "joints": 39,
+      "clips": {
+        "Idle": {
+          "seconds": 2.5,
+          "loop": true
+        },
+        "Walk": {
+          "seconds": 1.5,
+          "loop": true
+        },
+        "Gallop": {
+          "seconds": 0.833,
+          "loop": true
+        },
+        "Attack": {
+          "seconds": 1.5,
+          "loop": false
+        },
+        "Hit": {
+          "seconds": 0.625,
+          "loop": false
+        },
+        "Death": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Victory": {
+          "seconds": 1.875,
+          "loop": false
+        }
+      },
+      "sourceHeight": 1.898,
+      "footprint": {
+        "x": 1.632,
+        "z": 1.737
+      },
+      "scale": 0.5004,
+      "boardHeight": 0.95,
+      "material": "SUN_Knight_MAT"
+    },
+    "sun_rook": {
+      "army": "sun",
+      "piece": "rook",
+      "file": "/assets/chess-pieces/sun/rook/SUN_Rook.glb",
+      "bytes": 2392192,
+      "skeleton": "elephant+howdah",
+      "joints": 30,
+      "clips": {
+        "Idle": {
+          "seconds": 3.75,
+          "loop": true
+        },
+        "Walk": {
+          "seconds": 1.667,
+          "loop": true
+        },
+        "Attack": {
+          "seconds": 1.5,
+          "loop": false
+        },
+        "Hit": {
+          "seconds": 0.75,
+          "loop": false
+        },
+        "Death": {
+          "seconds": 2.083,
+          "loop": false
+        },
+        "Victory": {
+          "seconds": 1.875,
+          "loop": false
+        }
+      },
+      "sourceHeight": 1.818,
+      "footprint": {
+        "x": 1.007,
+        "z": 1.899
+      },
+      "scale": 0.4731,
+      "boardHeight": 0.86,
+      "material": "SUN_Rook_MAT"
+    },
+    "sun_pawn": {
+      "army": "sun",
+      "piece": "pawn",
+      "file": "/assets/chess-pieces/sun/pawn/SUN_Pawn.glb",
+      "bytes": 1746720,
+      "skeleton": "humanoid",
+      "joints": 32,
+      "clips": {
+        "Idle": {
+          "seconds": 2.5,
+          "loop": true
+        },
+        "Walk": {
+          "seconds": 1.25,
+          "loop": true
+        },
+        "Attack": {
+          "seconds": 1.125,
+          "loop": false
+        },
+        "Hit": {
+          "seconds": 0.625,
+          "loop": false
+        },
+        "Death": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Victory": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Defend": {
+          "seconds": 1.25,
+          "loop": true
+        }
+      },
+      "sourceHeight": 1.9,
+      "footprint": {
+        "x": 1.013,
+        "z": 0.725
+      },
+      "scale": 0.3789,
+      "boardHeight": 0.72,
+      "material": "SUN_Pawn_MAT"
+    },
+    "shadow_king": {
+      "army": "shadow",
+      "piece": "king",
+      "file": "/assets/chess-pieces/shadow/king/SHADOW_King.glb",
+      "bytes": 2131956,
+      "skeleton": "humanoid",
+      "joints": 32,
+      "clips": {
+        "Idle": {
+          "seconds": 2.5,
+          "loop": true
+        },
+        "Walk": {
+          "seconds": 1.25,
+          "loop": true
+        },
+        "Attack": {
+          "seconds": 1.125,
+          "loop": false
+        },
+        "Hit": {
+          "seconds": 0.625,
+          "loop": false
+        },
+        "Death": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Victory": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Defend": {
+          "seconds": 1.25,
+          "loop": true
+        }
+      },
+      "sourceHeight": 1.897,
+      "footprint": {
+        "x": 1.109,
+        "z": 0.675
+      },
+      "scale": 0.5273,
+      "boardHeight": 1,
+      "material": "SHADOW_King_MAT"
+    },
+    "shadow_queen": {
+      "army": "shadow",
+      "piece": "queen",
+      "file": "/assets/chess-pieces/shadow/queen/SHADOW_Queen.glb",
+      "bytes": 2000392,
+      "skeleton": "humanoid",
+      "joints": 32,
+      "clips": {
+        "Idle": {
+          "seconds": 2.5,
+          "loop": true
+        },
+        "Walk": {
+          "seconds": 1.25,
+          "loop": true
+        },
+        "Attack": {
+          "seconds": 1.125,
+          "loop": false
+        },
+        "Hit": {
+          "seconds": 0.625,
+          "loop": false
+        },
+        "Death": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Victory": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Defend": {
+          "seconds": 1.25,
+          "loop": true
+        }
+      },
+      "sourceHeight": 1.898,
+      "footprint": {
+        "x": 1.162,
+        "z": 1.217
+      },
+      "scale": 0.4846,
+      "boardHeight": 0.92,
+      "material": "SHADOW_Queen_MAT"
+    },
+    "shadow_bishop": {
+      "army": "shadow",
+      "piece": "bishop",
+      "file": "/assets/chess-pieces/shadow/bishop/SHADOW_Bishop.glb",
+      "bytes": 1969976,
+      "skeleton": "humanoid",
+      "joints": 32,
+      "clips": {
+        "Idle": {
+          "seconds": 2.5,
+          "loop": true
+        },
+        "Walk": {
+          "seconds": 1.25,
+          "loop": true
+        },
+        "Attack": {
+          "seconds": 1.125,
+          "loop": false
+        },
+        "Hit": {
+          "seconds": 0.625,
+          "loop": false
+        },
+        "Death": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Victory": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Defend": {
+          "seconds": 1.25,
+          "loop": true
+        }
+      },
+      "sourceHeight": 1.9,
+      "footprint": {
+        "x": 1.107,
+        "z": 0.802
+      },
+      "scale": 0.4527,
+      "boardHeight": 0.86,
+      "material": "SHADOW_Bishop_MAT"
+    },
+    "shadow_knight": {
+      "army": "shadow",
+      "piece": "knight",
+      "file": "/assets/chess-pieces/shadow/knight/SHADOW_Knight.glb",
+      "bytes": 2928928,
+      "skeleton": "horse+rider",
+      "joints": 39,
+      "clips": {
+        "Idle": {
+          "seconds": 2.5,
+          "loop": true
+        },
+        "Walk": {
+          "seconds": 1.5,
+          "loop": true
+        },
+        "Gallop": {
+          "seconds": 0.833,
+          "loop": true
+        },
+        "Attack": {
+          "seconds": 1.5,
+          "loop": false
+        },
+        "Hit": {
+          "seconds": 0.625,
+          "loop": false
+        },
+        "Death": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Victory": {
+          "seconds": 1.875,
+          "loop": false
+        }
+      },
+      "sourceHeight": 1.898,
+      "footprint": {
+        "x": 1.54,
+        "z": 1.782
+      },
+      "scale": 0.5006,
+      "boardHeight": 0.95,
+      "material": "SHADOW_Knight_MAT"
+    },
+    "shadow_rook": {
+      "army": "shadow",
+      "piece": "rook",
+      "file": "/assets/chess-pieces/shadow/rook/SHADOW_Rook.glb",
+      "bytes": 2804052,
+      "skeleton": "elephant+howdah",
+      "joints": 30,
+      "clips": {
+        "Idle": {
+          "seconds": 3.75,
+          "loop": true
+        },
+        "Walk": {
+          "seconds": 1.667,
+          "loop": true
+        },
+        "Attack": {
+          "seconds": 1.5,
+          "loop": false
+        },
+        "Hit": {
+          "seconds": 0.75,
+          "loop": false
+        },
+        "Death": {
+          "seconds": 2.083,
+          "loop": false
+        },
+        "Victory": {
+          "seconds": 1.875,
+          "loop": false
+        }
+      },
+      "sourceHeight": 1.727,
+      "footprint": {
+        "x": 0.942,
+        "z": 1.894
+      },
+      "scale": 0.498,
+      "boardHeight": 0.86,
+      "material": "SHADOW_Rook_MAT"
+    },
+    "shadow_pawn": {
+      "army": "shadow",
+      "piece": "pawn",
+      "file": "/assets/chess-pieces/shadow/pawn/SHADOW_Pawn.glb",
+      "bytes": 1634908,
+      "skeleton": "humanoid",
+      "joints": 32,
+      "clips": {
+        "Idle": {
+          "seconds": 2.5,
+          "loop": true
+        },
+        "Walk": {
+          "seconds": 1.25,
+          "loop": true
+        },
+        "Attack": {
+          "seconds": 1.125,
+          "loop": false
+        },
+        "Hit": {
+          "seconds": 0.625,
+          "loop": false
+        },
+        "Death": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Victory": {
+          "seconds": 1.875,
+          "loop": false
+        },
+        "Defend": {
+          "seconds": 1.25,
+          "loop": true
+        }
+      },
+      "sourceHeight": 1.898,
+      "footprint": {
+        "x": 0.997,
+        "z": 0.55
+      },
+      "scale": 0.3793,
+      "boardHeight": 0.72,
+      "material": "SHADOW_Pawn_MAT"
+    }
+  }
+}

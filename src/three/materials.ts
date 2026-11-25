@@ -3,7 +3,7 @@
  * Materials are shared per army for performance; dying units clone theirs to fade out.
  */
 import * as THREE from 'three';
-import type { ArmyId } from '../config/settings';
+import type { ClassicArmy as ArmyId } from '../config/settings';
 
 export interface ArmyMaterials {
   metal: THREE.MeshStandardMaterial;
@@ -194,12 +194,12 @@ export function stoneTexture() {
 export function bannerTexture(army: ArmyId) {
   return noiseCanvas(128, (ctx, s) => {
     const hell = army === 'hellenic';
-    ctx.fillStyle = hell ? '#27498c' : '#6e1220';
+    ctx.fillStyle = hell ? '#8c1d18' : '#141114'; // Sun: royal crimson · Shadow: blackened
     ctx.fillRect(0, 0, s, s);
-    ctx.strokeStyle = hell ? '#e8c766' : '#d4a93a';
+    ctx.strokeStyle = hell ? '#e8c766' : '#8a6a3a'; // gold · dark bronze
     ctx.lineWidth = 6;
     ctx.strokeRect(6, 6, s - 12, s - 12);
-    ctx.fillStyle = hell ? '#efe7d2' : '#d4a93a';
+    ctx.fillStyle = hell ? '#f0c95a' : '#9e1f1f'; // gold sun · deep-red disc
     ctx.translate(s / 2, s / 2);
     if (hell) {
       // stylised sun / star of the League

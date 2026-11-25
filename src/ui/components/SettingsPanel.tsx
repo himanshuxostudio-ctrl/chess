@@ -50,11 +50,20 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
         <div className="settings-section">
           <div className="label">Armies</div>
           <div className="choice-row" style={{ marginTop: 8 }}>
-            <button className={`chip ${s.whiteArmy === 'hellenic' ? 'on' : ''}`} onClick={() => s.set({ whiteArmy: 'hellenic' })}>
-              White: Hellenic League
+            <button className={`chip ${s.whiteArmy === 'sun' ? 'on' : ''}`} onClick={() => s.set({ whiteArmy: 'sun' })}>
+              White: Sun Army
             </button>
-            <button className={`chip ${s.whiteArmy === 'persian' ? 'on' : ''}`} onClick={() => s.set({ whiteArmy: 'persian' })}>
-              White: Persian Immortals
+            <button className={`chip ${s.whiteArmy === 'shadow' ? 'on' : ''}`} onClick={() => s.set({ whiteArmy: 'shadow' })}>
+              White: Shadow Army
+            </button>
+          </div>
+          <div className="label" style={{ marginTop: 12 }}>Character models</div>
+          <div className="choice-row" style={{ marginTop: 8 }}>
+            <button className={`chip ${s.unitModels === 'detailed' ? 'on' : ''}`} onClick={() => s.set({ unitModels: 'detailed' })}>
+              Detailed armies
+            </button>
+            <button className={`chip ${s.unitModels === 'classic' ? 'on' : ''}`} onClick={() => s.set({ unitModels: 'classic' })}>
+              Classic (lightweight)
             </button>
           </div>
         </div>

@@ -7,7 +7,7 @@ import { useMemo, useRef, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { ArmyMaterials } from '../materials';
-import type { ArmyId } from '../../config/settings';
+import type { ClassicArmy as ArmyId } from '../../config/settings';
 import { env, type Pose } from './pose';
 
 export type Helmet = 'corinthian' | 'tiara' | 'crown' | 'mitre' | 'diadem' | 'hood' | 'kingcrown' | 'tallcap';

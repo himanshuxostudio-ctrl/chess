@@ -6,7 +6,7 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useSettings } from '../../config/settings';
+import { useSettings, classicArmy } from '../../config/settings';
 import { bannerTexture, groundTexture, stoneTexture } from '../materials';
 
 function Sky() {
@@ -243,7 +243,7 @@ function Dust({ count }: { count: number }) {
 
 export function Battlefield() {
   const quality = useSettings((s) => s.quality);
-  const whiteArmy = useSettings((s) => s.whiteArmy);
+  const whiteArmy = classicArmy(useSettings((s) => s.whiteArmy));
   const blackArmy = whiteArmy === 'hellenic' ? 'persian' : 'hellenic';
   const hi = quality === 'high';
   const lo = quality === 'low';

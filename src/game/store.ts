@@ -465,7 +465,7 @@ export const useGame = create<GameState>()((set, get) => {
     pendingPromotion: null,
     myColor: null,
     orientation: 'w',
-    players: { w: { name: 'Hellenic League' }, b: { name: 'Persian Immortals' } },
+    players: { w: { name: 'Sun Army' }, b: { name: 'Shadow Army' } },
     aiLevel: AI_LEVELS[2],
     aiThinking: false,
     thinkMultiplier: 1,
@@ -506,8 +506,8 @@ export const useGame = create<GameState>()((set, get) => {
             ? { w: me, b: aiSide }
             : { w: aiSide, b: me }
           : cfg.mode === 'local'
-            ? { w: { name: cfg.names?.w || 'Hellenic Commander' }, b: { name: cfg.names?.b || 'Persian Commander' } }
-            : { w: { name: 'Hellenic League' }, b: { name: 'Persian Immortals' } };
+            ? { w: { name: cfg.names?.w || 'Sun Commander' }, b: { name: cfg.names?.b || 'Shadow Commander' } }
+            : { w: { name: 'Sun Army' }, b: { name: 'Shadow Army' } };
       set({
         mode: cfg.mode,
         match,
