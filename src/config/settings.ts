@@ -25,6 +25,8 @@ export interface Settings {
   autoRotateBoard: boolean; // pass & play: rotate view to side to move
   /** Ask before resigning. */
   confirmResign: boolean;
+  /** Short cinematic before each battle (skippable). */
+  matchIntro: boolean;
   /** Which army commands the White pieces. Fixed to 'sun' since v3 (kept for the helper signature). */
   whiteArmy: ArmyId;
   /** Rigged GLB army characters, or the lightweight procedural units. */
@@ -54,6 +56,7 @@ export const useSettings = create<Settings>()(
       showHints: true,
       autoRotateBoard: true,
       confirmResign: true,
+      matchIntro: true,
       whiteArmy: 'sun',
       unitModels: 'detailed',
       set: (patch) => set(patch),
@@ -73,6 +76,7 @@ export const useSettings = create<Settings>()(
         if (version < 3) {
           s.whiteArmy = 'sun';
           s.confirmResign = true;
+          s.matchIntro = true;
         }
         return s as unknown as Settings;
       },

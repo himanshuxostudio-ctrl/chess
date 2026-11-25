@@ -7,6 +7,8 @@ import { useView } from '../../three/CameraRig';
 import { Icon, UnitGlyph, UNIT_NAMES, Crest } from '../components/Icons';
 import { useSettings, ARMY_NAME, armyOf } from '../../config/settings';
 import { inviteBase } from '../../match/prefs';
+import { MatchIntro } from '../../match/MatchIntro';
+import { battlefieldName, describeTime } from '../../../shared/match';
 import { sound } from '../../audio/sound';
 import { useMediaQuery } from '../useMediaQuery';
 
@@ -196,9 +198,19 @@ export function ResultModal({ onMenu, onPlayAgain }: { onMenu: () => void; onPla
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button className="btn primary" onClick={onPlayAgain}>
-            {s.mode === 'online' ? 'Request Rematch' : 'Play Again'}
-          </button>
+          {s.mode === 'spectate' ? null : s.mode === 'online' && s.snapshot?.config.allowRematch === false ? (
+            <span className="muted" style={{ alignSelf: 'center' }}>Rematches are off for this battle</span>
+          ) : (
+            <button className="btn primary" onClick={onPlayAgain} disabled={s.mode === 'online' && s.snapshot?.rematchBy === me}>
+              {s.mode !== 'online'
+                ? 'Play Again'
+                : s.snapshot?.rematchBy === me
+                  ? 'Rematch requested…'
+                  : s.snapshot?.rematchBy
+                    ? 'Accept Rematch'
+                    : 'Request Rematch'}
+            </button>
+          )}
           <button className="btn" onClick={exportPgn}>
             <Icon.download className="" /> PGN
           </button>
@@ -313,6 +325,7 @@ export function GameScreen({ onMenu, onSettings, onPlayAgain }: { onMenu: () => 
   const narrow = useMediaQuery('(max-width: 900px)');
   const [panelOpen, setPanelOpen] = useState(!narrow);
   const [confirmResign, setConfirmResign] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const { setView, reset } = useView();
   const soundOn = useSettings((x) => x.soundOn);
   useEffect(() => setPanelOpen(!narrow), [narrow]);
@@ -371,6 +384,16 @@ export function GameScreen({ onMenu, onSettings, onPlayAgain }: { onMenu: () => 
             Reconnecting to the battlefield…
           </div>
         )}
+        <div className="match-info">
+          <span>{battlefieldName(s.battlefield)}</span>
+          <span>{describeTime(s.timeControl)}</span>
+          {s.mode === 'online' && <span>{s.rated ? 'Rated' : 'Unrated'}</span>}
+        </div>
+        {s.mode === 'online' && (
+          <div className="conn-line muted" style={{ marginTop: 0 }}>
+            <span className={`dot ${s.netStatus === 'open' ? 'on' : 'off'}`} /> {s.netStatus === 'open' ? 'Connected to server' : 'Connection lost'}
+          </div>
+        )}
         {(s.mode === 'online' || s.mode === 'spectate') && s.roomId && (
           <div className="muted" style={{ fontSize: 12, display: 'flex', justifyContent: 'space-between' }}>
             <span>Room {s.roomId}</span>
@@ -381,11 +404,11 @@ export function GameScreen({ onMenu, onSettings, onPlayAgain }: { onMenu: () => 
         )}
         <div className="label">Chronicle of the Battle</div>
         <MoveList />
-        {(s.mode === 'online' && s.roomId) && (
+        {s.mode === 'online' && s.roomId && s.snapshot?.config.allowSpectators !== false && (
           <button
             className="btn small"
             onClick={() => {
-              navigator.clipboard?.writeText(`${location.origin}/watch/${s.roomId}`);
+              navigator.clipboard?.writeText(`${inviteBase()}/watch/${s.roomId}`);
               s.toast('Spectator link copied.', 'success');
             }}
           >
@@ -416,8 +439,8 @@ export function GameScreen({ onMenu, onSettings, onPlayAgain }: { onMenu: () => 
       )}
 
       <div className="bottom-bar">
-        <button className="btn small ghost" onClick={onMenu}>
-          <Icon.back className="" /> Menu
+        <button className="btn small ghost" onClick={() => (s.mode === 'online' && s.snapshot?.status === 'active' && !s.outcome.over ? setConfirmLeave(true) : onMenu())}>
+          <Icon.back className="" /> Exit
         </button>
         {canUndo && (
           <button className="btn small" onClick={s.undo}>
@@ -469,11 +492,25 @@ export function GameScreen({ onMenu, onSettings, onPlayAgain }: { onMenu: () => 
         </div>
       )}
 
+      {confirmLeave && (
+        <div className="modal-backdrop" onClick={() => setConfirmLeave(false)}>
+          <div className="modal panel" onClick={(e) => e.stopPropagation()}>
+            <h2>Leave the battle?</h2>
+            <p className="muted">The battle continues without you. Open the invitation link again within 90 seconds to retake your seat, or the battle is lost.</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button className="btn ghost" onClick={() => setConfirmLeave(false)}>Stay</button>
+              <button className="btn danger" onClick={() => { setConfirmLeave(false); onMenu(); }}>Leave</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Toasts />
       <DrawOffer />
       <PromotionDialog />
       <Handover />
       <OnlineWaiting />
+      <MatchIntro />
       <ResultModal onMenu={onMenu} onPlayAgain={onPlayAgain} />
     </>
   );

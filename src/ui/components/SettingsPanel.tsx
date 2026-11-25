@@ -42,6 +42,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           <Toggle label="Cinematic camera" hint="Camera follows captures and checks" value={s.cinematicCamera} onChange={(v) => s.set({ cinematicCamera: v })} />
           <Toggle label="Fixed camera" hint="Disable orbit / zoom / pan" value={s.fixedCamera} onChange={(v) => s.set({ fixedCamera: v })} />
           <Toggle label="Show move hints" value={s.showHints} onChange={(v) => s.set({ showHints: v })} />
+          <Toggle label="Match intro" hint="Short skippable cinematic before each battle" value={s.matchIntro} onChange={(v) => s.set({ matchIntro: v })} />
           <Toggle label="Confirm before resigning" value={s.confirmResign} onChange={(v) => s.set({ confirmResign: v })} />
           <Toggle label="Rotate board to side to move (pass & play)" value={s.autoRotateBoard} onChange={(v) => s.set({ autoRotateBoard: v })} />
           <Slider label="Animation speed" value={s.animationSpeed} min={0.5} max={2.5} step={0.1} onChange={(v) => s.set({ animationSpeed: v })} fmt={(v) => `${v.toFixed(1)}×`} />

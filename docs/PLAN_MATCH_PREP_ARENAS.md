@@ -65,3 +65,19 @@ Each stage is committed separately so every commit is a working version.
 ## 4. Requires the owner (cannot be done from this machine)
 - **A public deployment** (e.g. Render via `render.yaml`) so invite links work across the internet.
 - **A test on two separate physical devices.** Locally, two-player sync is tested with a browser plus a WebSocket client, which is the same server code path.
+
+## 5. Status (all stages implemented)
+| Stage | Result | Verified by |
+|---|---|---|
+| 2 Server config & lifecycle | done | 7 new server tests: identical config for both players, clamping, ready, cancel, spectators, rematch, peek |
+| 3–4 Match preparation | done | Browser: hub, Custom Match (all five opponents), invite lobby (link, copy/share, seats, connection, ready, cancel), invitation screen (accept / watch / decline, live cancel), matchmaking pairing, AI and local start, 375 px layout |
+| 5–6 Battlefields | done | Screenshots of all four arenas; contrast test (`tests/arena.test.ts`); each arena is its own lazy chunk (2–4 kB) |
+| 7 Intro & in-game UI | done | Browser: intro on AI and online games (both players see the same terms), skip, clocks not running during intro, match info, connection line, exit confirmation, rematch request/accept keeps settings |
+| 8 Tests | 132 unit/integration tests passing; `npm run build` clean |
+
+Behaviour changes worth knowing:
+- The **Sun Army is always White** (moves first) for everyone; the old "White: Shadow Army" setting is retired (migrated) so online opponents and spectators always see the same armies. Players choose their army per match instead.
+- Old lobby screens (`ModeSelect`, `AiLobby`, `FriendLobby`, `LocalLobby`, `JoinScreen`) were replaced by the new flow; every mode they offered is still reachable.
+- Rematches swap sides (and therefore armies) and keep the battlefield, clock and rules.
+
+Still open: public deployment + `VITE_PUBLIC_URL`, and a real two-device test (section 4).
