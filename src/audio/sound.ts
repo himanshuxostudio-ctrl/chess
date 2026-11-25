@@ -2,6 +2,7 @@
  * Procedural battlefield audio built entirely with the Web Audio API — no audio files to
  * license or download. Four mix buses (music, environment, combat, ui) feed a master gain.
  */
+import type { AmbienceProfile } from '../three/arena/themes';
 import { useSettings } from '../config/settings';
 
 export type Sfx =
@@ -227,49 +228,105 @@ class SoundEngine {
     this.horn('music', tt, 2, D * 1.5, 0.08);
   }
 
-  /** Wind + distant war drums loop. */
+  /** Ambience of the current battlefield (see src/three/arena/themes.ts). */
+  ambience: AmbienceProfile = { wind: 500, windGain: 0.18, drone: 0, droneGain: 0, drums: 'distant', crackle: 0.3 };
+  crackleTimer: number | null = null;
+
+  /** Switch ambience (battlefield changed); restarts the loop if it is playing. */
+  setAmbience(p: AmbienceProfile) {
+    this.ambience = p;
+    if (this.ambientOn) {
+      this.stopAmbient();
+      this.startAmbient();
+    }
+  }
+
+  /** Wind, optional drone, fire crackle and drums, shaped by the battlefield's ambience profile. */
   startAmbient() {
     if (!this.ctx || this.ambientOn) return;
     this.ambientOn = true;
     const c = this.ctx;
+    const a = this.ambience;
     const src = c.createBufferSource();
     src.buffer = this.noise;
     src.loop = true;
     const f = c.createBiquadFilter();
     f.type = 'bandpass';
-    f.frequency.value = 500;
+    f.frequency.value = a.wind;
     f.Q.value = 0.6;
     const lfo = c.createOscillator();
     lfo.frequency.value = 0.07;
     const lg = c.createGain();
-    lg.gain.value = 300;
+    lg.gain.value = a.wind * 0.6;
     lfo.connect(lg).connect(f.frequency);
     const g = c.createGain();
-    g.gain.value = 0.18;
+    g.gain.value = a.windGain;
     const gl = c.createOscillator();
     gl.frequency.value = 0.11;
     const glg = c.createGain();
-    glg.gain.value = 0.08;
+    glg.gain.value = a.windGain * 0.45;
     gl.connect(glg).connect(g.gain);
     src.connect(f).connect(g).connect(this.buses.environment);
     src.start();
     lfo.start();
     gl.start();
     this.ambientNodes = [src, lfo, gl];
-    const beat = () => {
-      if (!this.ctx) return;
-      const t = this.ctx.currentTime;
-      // distant drums: low-passed, quiet, irregular phrase
-      for (const [o, v] of [[0, 0.14], [0.45, 0.1], [0.9, 0.16]] as const) this.drum('music', t + o, v, 50);
-      this.drumTimer = window.setTimeout(beat, 6000 + Math.random() * 5000);
-    };
-    this.drumTimer = window.setTimeout(beat, 2500);
+    if (a.drone > 0) {
+      // low, slowly beating drone (two detuned oscillators)
+      const dg = c.createGain();
+      dg.gain.value = a.droneGain;
+      const lp = c.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 240;
+      dg.connect(lp).connect(this.buses.music);
+      for (const det of [0, 0.7]) {
+        const o = c.createOscillator();
+        o.type = 'sawtooth';
+        o.frequency.value = a.drone + det;
+        o.connect(dg);
+        o.start();
+        this.ambientNodes.push(o);
+      }
+    }
+    if (a.crackle > 0) {
+      const crack = () => {
+        if (!this.ctx || !this.ambientOn) return;
+        const t = this.ctx.currentTime;
+        const n = this.ctx.createBufferSource();
+        n.buffer = this.noise;
+        const hp = this.ctx.createBiquadFilter();
+        hp.type = 'highpass';
+        hp.frequency.value = 2500;
+        const cg = this.ctx.createGain();
+        cg.gain.setValueAtTime(0.0001, t);
+        cg.gain.exponentialRampToValueAtTime(0.05 * a.crackle, t + 0.005);
+        cg.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+        n.connect(hp).connect(cg).connect(this.buses.environment);
+        n.start(t, Math.random(), 0.08);
+        this.crackleTimer = window.setTimeout(crack, 120 + Math.random() * 900 / a.crackle);
+      };
+      this.crackleTimer = window.setTimeout(crack, 400);
+    }
+    if (a.drums !== 'none') {
+      const war = a.drums === 'war';
+      const beat = () => {
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const phrase: readonly (readonly [number, number])[] = war
+          ? [[0, 0.16], [0.35, 0.12], [0.7, 0.18], [1.4, 0.14], [1.75, 0.2]]
+          : [[0, 0.14], [0.45, 0.1], [0.9, 0.16]];
+        for (const [o, v] of phrase) this.drum('music', t + o, v, war ? 56 : 50);
+        this.drumTimer = window.setTimeout(beat, (war ? 4500 : 6000) + Math.random() * 5000);
+      };
+      this.drumTimer = window.setTimeout(beat, 2500);
+    }
   }
   stopAmbient() {
     this.ambientOn = false;
     for (const n of this.ambientNodes) (n as AudioScheduledSourceNode).stop?.();
     this.ambientNodes = [];
     if (this.drumTimer) clearTimeout(this.drumTimer);
+    if (this.crackleTimer) clearTimeout(this.crackleTimer);
   }
 }
 

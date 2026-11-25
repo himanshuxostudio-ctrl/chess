@@ -10,6 +10,7 @@ import { useGame } from '../game/store';
 import { sqToXZ, xzToSq } from '../game/choreography';
 import { useSettings } from '../config/settings';
 import { marbleTexture, stoneTexture } from './materials';
+import { arenaTheme } from './arena/themes';
 import { dragState } from './dragState';
 
 const SQUARES: Square[] = [];
@@ -55,17 +56,21 @@ export function Board() {
   const dragging = useGame((s) => s.dragging);
   const animating = useGame((s) => !!s.anim);
   const showHints = useSettings((s) => s.showHints);
+  // Only the look of the squares changes per battlefield; geometry and coordinates never do.
+  const look = arenaTheme(useGame((s) => s.battlefield)).board;
 
   const mats = useMemo(() => {
-    const light = [0, 1, 2, 3].map((i) => new THREE.MeshStandardMaterial({ map: marbleTexture('#d9ccb0', '#8d7b5c', i + 1), roughness: 0.55, metalness: 0.02 }));
-    const dark = [0, 1, 2, 3].map((i) => new THREE.MeshStandardMaterial({ map: marbleTexture('#4b3f33', '#a08664', i + 7), roughness: 0.5, metalness: 0.05 }));
+    const light = [0, 1, 2, 3].map((i) => new THREE.MeshStandardMaterial({ map: marbleTexture(look.light.base, look.light.vein, i + 1), roughness: 0.55, metalness: 0.02 }));
+    const dark = [0, 1, 2, 3].map((i) => new THREE.MeshStandardMaterial({ map: marbleTexture(look.dark.base, look.dark.vein, i + 7), roughness: 0.5, metalness: 0.05 }));
     return { light, dark };
-  }, []);
+  }, [look]);
+  useEffect(() => () => [...mats.light, ...mats.dark].forEach((m) => (m.map?.dispose(), m.dispose())), [mats]);
   const frame = useMemo(() => {
     const t = stoneTexture();
     t.repeat.set(4, 1);
-    return new THREE.MeshStandardMaterial({ map: t, roughness: 0.9, color: '#a89880' });
-  }, []);
+    return new THREE.MeshStandardMaterial({ map: t, roughness: 0.9, color: look.frame });
+  }, [look]);
+  const trim = useMemo(() => (look.trim ? new THREE.MeshStandardMaterial({ color: look.trim, metalness: 0.9, roughness: 0.3 }) : null), [look]);
   const coords = useMemo(() => {
     const files = 'abcdefgh'.split('');
     const ranks = '12345678'.split('');
@@ -171,6 +176,17 @@ export function Board() {
         <mesh position={[0, -0.2, 0]} material={frame} receiveShadow>
           <boxGeometry args={[9.9, 0.3, 9.9]} />
         </mesh>
+        {trim &&
+          [
+            [0, -4.06, 8.2, 0.07],
+            [0, 4.06, 8.2, 0.07],
+            [-4.06, 0, 0.07, 8.2],
+            [4.06, 0, 0.07, 8.2],
+          ].map(([x, z, w, d], i) => (
+            <mesh key={`t${i}`} position={[x, 0.125, z]} material={trim}>
+              <boxGeometry args={[w, 0.02, d]} />
+            </mesh>
+          ))}
         <mesh position={[0, 0.125, 4.35]} rotation={[-Math.PI / 2, 0, 0]} material={coords.filesNear}>
           <planeGeometry args={[8, 0.5]} />
         </mesh>

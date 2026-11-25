@@ -147,13 +147,15 @@ export function marbleTexture(base: string, vein: string, seed = 1) {
   });
 }
 
-export function groundTexture() {
+export function groundTexture(base = '#5b4a33', patchA = 'rgba(70,80,40,0.35)', patchB = 'rgba(120,95,60,0.3)') {
+  // patch colours are rgba() strings; each blot gets a random fraction of their alpha
+  const withAlpha = (c: string, k: number) => c.replace(/,\s*([\d.]+)\)$/, (_, a) => `,${(Number(a) * k).toFixed(3)})`);
   const t = noiseCanvas(512, (ctx, s) => {
-    ctx.fillStyle = '#5b4a33';
+    ctx.fillStyle = base;
     ctx.fillRect(0, 0, s, s);
     for (let i = 0; i < 900; i++) {
       const g = Math.random();
-      ctx.fillStyle = g < 0.5 ? `rgba(70,80,40,${Math.random() * 0.35})` : `rgba(120,95,60,${Math.random() * 0.3})`;
+      ctx.fillStyle = withAlpha(g < 0.5 ? patchA : patchB, Math.random());
       const r = 4 + Math.random() * 22;
       ctx.beginPath();
       ctx.arc(Math.random() * s, Math.random() * s, r, 0, Math.PI * 2);
@@ -166,9 +168,9 @@ export function groundTexture() {
   return t;
 }
 
-export function stoneTexture() {
+export function stoneTexture(base = '#7d715f') {
   const t = noiseCanvas(256, (ctx, s) => {
-    ctx.fillStyle = '#7d715f';
+    ctx.fillStyle = base;
     ctx.fillRect(0, 0, s, s);
     // block courses
     ctx.strokeStyle = 'rgba(30,25,18,0.6)';

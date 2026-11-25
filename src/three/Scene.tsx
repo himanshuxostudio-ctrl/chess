@@ -7,7 +7,7 @@ import { useGame } from '../game/store';
 import { useSettings } from '../config/settings';
 import { Board } from './Board';
 import { PieceActor } from './PieceActor';
-import { Battlefield } from './env/Battlefield';
+import { Arena } from './arena/Arena';
 import { Effects } from './Effects';
 import { CameraRig } from './CameraRig';
 import { preloadArmies } from './units/GlbUnit';
@@ -70,7 +70,7 @@ export default function Scene() {
       <ArmourReflections />
       <Preload />
       <Suspense fallback={null}>
-        <Battlefield />
+        <Arena />
         <Board />
         <Units />
         <Effects />
