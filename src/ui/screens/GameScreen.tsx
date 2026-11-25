@@ -5,7 +5,7 @@ import { useGame, displayClock, type PlayerSide } from '../../game/store';
 import { REASON_TEXT } from '../../../shared/rules';
 import { useView } from '../../three/CameraRig';
 import { Icon, UnitGlyph, UNIT_NAMES, Crest } from '../components/Icons';
-import { useSettings } from '../../config/settings';
+import { useSettings, ARMY_NAME, armyOf } from '../../config/settings';
 import { sound } from '../../audio/sound';
 import { useMediaQuery } from '../useMediaQuery';
 
@@ -14,7 +14,6 @@ const fmt = (ms: number) => {
   if (s >= 3600) return `${Math.floor(s / 3600)}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
-const ARMY_NAME = (army: string) => (army === 'hellenic' ? 'Hellenic League' : 'Persian Immortals');
 
 function useNow(active: boolean) {
   const [now, setNow] = useState(performance.now());
@@ -53,7 +52,7 @@ function PlayerCard({ color, side, active }: { color: Color; side: PlayerSide; a
   const timed = s.timeControl.initial > 0;
   const clock = displayClock(s, now);
   const whiteArmy = useSettings((x) => x.whiteArmy);
-  const army = color === 'w' ? whiteArmy : whiteArmy === 'hellenic' ? 'persian' : 'hellenic';
+  const army = armyOf(color, whiteArmy);
   const online = s.mode === 'online' || s.mode === 'spectate';
   const deadline = s.snapshot?.disconnectDeadline[color];
   return (
@@ -63,7 +62,7 @@ function PlayerCard({ color, side, active }: { color: Color; side: PlayerSide; a
         <div className="pname">{side.name}</div>
         <div className="psub">
           {online && <span className={`dot ${side.connected ? '' : 'off'}`} title={side.connected ? 'Connected' : 'Disconnected'} />}
-          <span>{ARMY_NAME(army)}</span>
+          <span>{ARMY_NAME[army]}</span>
           {side.rating ? <span>· {side.rating}</span> : null}
           {online && !side.connected && deadline ? <span style={{ color: 'var(--red-bright)' }}>· {fmt(deadline - Date.now())}</span> : null}
         </div>
@@ -159,7 +158,7 @@ export function ResultModal({ onMenu, onPlayAgain }: { onMenu: () => void; onPla
   const winnerName = o.winner ? s.players[o.winner].name : '';
   const loser = o.winner ? (o.winner === 'w' ? 'b' : 'w') : null;
   const whiteArmy = useSettings.getState().whiteArmy;
-  const armyOf = (c: Color) => (c === 'w' ? whiteArmy : whiteArmy === 'hellenic' ? 'persian' : 'hellenic');
+  const armyName = (c: Color) => ARMY_NAME[armyOf(c, whiteArmy)];
   const hist = s.match.history();
   const caps = { w: hist.filter((m) => m.captured && m.color === 'w').length, b: hist.filter((m) => m.captured && m.color === 'b').length };
   const dur = Math.round(((s.endedAt ?? Date.now()) - s.startedAt) / 1000);
@@ -179,7 +178,7 @@ export function ResultModal({ onMenu, onPlayAgain }: { onMenu: () => void; onPla
         <Crest className="crest" />
         <h2>{title}</h2>
         <p style={{ fontSize: 16 }}>
-          {draw ? `The armies withdraw — ${REASON_TEXT[o.reason!]}.` : `${winnerName} (${ARMY_NAME(armyOf(o.winner!))}) defeats the ${ARMY_NAME(armyOf(loser!))} by ${REASON_TEXT[o.reason!].toLowerCase()}.`}
+          {draw ? `The armies withdraw — ${REASON_TEXT[o.reason!]}.` : `${winnerName} (${armyName(o.winner!)}) defeats the ${armyName(loser!)} by ${REASON_TEXT[o.reason!].toLowerCase()}.`}
         </p>
         <div className="stats-grid">
           <div className="stat">

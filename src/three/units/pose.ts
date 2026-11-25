@@ -2,7 +2,7 @@ import type { AttackStyle } from '../../game/choreography';
 
 /** Per-frame animation state the actor computes and each model reads to pose its joints. */
 export interface Pose {
-  mode: 'idle' | 'walk' | 'attack' | 'hit' | 'die' | 'promote';
+  mode: 'idle' | 'walk' | 'attack' | 'hit' | 'die' | 'promote' | 'defend' | 'victory';
   /** 0..1 progress through the current segment. */
   p: number;
   /** Walk cycle phase in radians. */

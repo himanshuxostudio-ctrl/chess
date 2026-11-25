@@ -4,7 +4,7 @@ import type { Color } from 'chess.js';
 import { AI_LEVELS } from '../../ai/stockfish';
 import { TIME_CONTROLS, ROOM_ID_RE, type TimeControl } from '../../../shared/protocol';
 import { useProfile, favouriteMode, fileToAvatar } from '../../profile/profile';
-import { useSettings } from '../../config/settings';
+import { useSettings, ARMY_NAME, armyOf } from '../../config/settings';
 import { Icon, Logo, ModeGlyph } from '../components/Icons';
 
 export type Screen = 'landing' | 'modes' | 'ai' | 'friend' | 'local' | 'spectate' | 'profile' | 'join';
@@ -45,7 +45,7 @@ export function Landing({ go, onSettings, playNow }: { go: (s: Screen) => void; 
       <div className="menu-wrap">
         <TopBar go={go} onSettings={onSettings} />
         <section className="hero">
-          <div className="label" style={{ color: 'var(--gold)' }}>The Hellenic League · versus · The Persian Immortals</div>
+          <div className="label" style={{ color: 'var(--gold)' }}>The Sun Army · versus · The Shadow Army</div>
           <h1>
             Command your army.
             <span>Conquer the board.</span>
@@ -117,7 +117,7 @@ function TimePicker({ value, onChange }: { value: TimeControl; onChange: (t: Tim
 
 function ArmyPicker({ color, onChange, allowRandom }: { color: Color | 'random'; onChange: (c: Color | 'random') => void; allowRandom?: boolean }) {
   const whiteArmy = useSettings((s) => s.whiteArmy);
-  const name = (c: Color) => ((c === 'w') === (whiteArmy === 'hellenic') ? 'Hellenic League' : 'Persian Immortals');
+  const name = (c: Color) => ARMY_NAME[armyOf(c, whiteArmy)];
   return (
     <div className="choice-row">
       <button className={`chip ${color === 'w' ? 'on' : ''}`} onClick={() => onChange('w')}>
@@ -280,11 +280,11 @@ export function LocalLobby({ go, onSettings, start }: { go: (s: Screen) => void;
           <div className="panel" style={{ display: 'grid', gap: 14, alignContent: 'start' }}>
             <label style={{ display: 'grid', gap: 6 }}>
               <span className="label">White commander</span>
-              <input type="text" placeholder="Hellenic Commander" value={w} maxLength={24} onChange={(e) => setW(e.target.value)} />
+              <input type="text" placeholder="Sun Commander" value={w} maxLength={24} onChange={(e) => setW(e.target.value)} />
             </label>
             <label style={{ display: 'grid', gap: 6 }}>
               <span className="label">Black commander</span>
-              <input type="text" placeholder="Persian Commander" value={b} maxLength={24} onChange={(e) => setB(e.target.value)} />
+              <input type="text" placeholder="Shadow Commander" value={b} maxLength={24} onChange={(e) => setB(e.target.value)} />
             </label>
             <div>
               <div className="label" style={{ marginBottom: 8 }}>Battle clock</div>

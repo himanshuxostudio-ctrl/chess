@@ -247,3 +247,63 @@ The rooks are kept lower so the elephant's length fits in one square.
 - footprint fits inside one square
 
 The tests caught the Shadow elephant overlapping the next square (1.009) at the first board height; fixed by lowering rook height.
+
+---
+
+# Phase 7–8: Sun / Shadow integration into the game
+
+## What changed (render layer only)
+The chess rules, store, server and multiplayer protocol are untouched.
+
+- **Armies:** the in-game armies are now the **Sun Army** (White by default) and the **Shadow Army**. The existing "swap armies" setting still works, and saved settings migrate automatically (settings v2).
+- **New setting, Character models:**
+  - *Detailed armies* (default): the 12 rigged GLBs.
+  - *Classic*: the original procedural units. They are also the loading placeholder and the automatic fallback if a model fails to load (error boundary).
+- **`src/three/units/GlbUnit.tsx`:**
+  - each GLB is parsed once (cached)
+  - each piece on the board gets its own skeleton clone, sharing geometry and textures, plus its own `AnimationMixer`
+  - looping clips (Idle, Walk / Gallop, Defend) run on the mixer clock, with idles desynchronised per unit
+  - one-shot clips (Attack, Hit, Death, promotion Victory) are scrubbed from the choreography's progress, so the weapon strike lands exactly on the impact the capture logic schedules
+  - Death folds in the first 55% of the segment; the actor then topples and sinks the unit as before
+- **Pose → clip:**
+
+| Game event | Clip |
+|---|---|
+| move | Walk (knights: Gallop) |
+| capture strike | Attack |
+| struck | Hit |
+| defeated | Death |
+| promotion | Victory |
+| winning army at game end | Victory |
+| unit about to be struck (turns to face the attacker) | Defend |
+
+- **Board placement:** board scale per piece comes from the manifest. Pivots on the ground, +Z forward, and the square mapping (`sqToXZ`) are unchanged, so placement and facing match the old units exactly.
+- **Phase 7 finding, distinguishability:** both armies wear crimson cloth, so at board distance they blended together. Every unit now stands on an **army base**:
+  - Sun: bronze-gold plinth with an ivory inlay
+  - Shadow: blackened iron with a glowing deep-red inlay
+
+  Allegiance is readable from any angle without altering the characters. The banners were recoloured to match (Sun crimson/gold, Shadow black/red/dark bronze).
+- **Lighting:** a locally generated image-based environment (`RoomEnvironment` → PMREM, no download), so gold, bronze and blackened-iron PBR metals have something to reflect.
+- **Loading:** all 12 models are preloaded as the battlefield mounts.
+
+## Browser tests (local production server)
+- **Loading:** all 12 GLBs load; 32 units render on their squares with correct facing.
+- **Pass and play:** moves, captures (attack wind-up, defend guard, death), auto-rotate, checkmate with Victory, and the result screen all work.
+- **AI (Medium):** three AI replies, all animated; units match the engine after every move.
+- **Online:** a room is created in the browser and a second player joins from a Node WebSocket client. Both a local capture and a remote capture animate, and the board stays in sync with the server.
+- **Spectator:** `/watch/<room>` shows the live position with the new armies, and units can't be selected.
+
+**Frame rate** (desktop, Chrome, pane visible):
+
+| Scenario | Frame rate | Worst frame |
+|---|---|---|
+| Idle, 32 animated units | 61 fps | 18 ms |
+| Plain move | 61 fps | 18 ms |
+| Capture duel | 60 fps | 34 ms |
+| New game (all 32 units remount) | 58 fps | one 100 ms hitch |
+
+An earlier "1 fps" reading was taken while the pane was hidden, when the browser throttles animation frames. Remeasured visible.
+
+**Not yet verified:**
+- real phones and tablets (only desktop at phone size)
+- two separate physical devices online (tested with browser + Node client)

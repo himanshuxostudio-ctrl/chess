@@ -2,13 +2,14 @@
  * Places and animates one unit. Root motion comes from the choreography script (evaluated
  * deterministically from elapsed time), limb motion from the unit model reading `pose`.
  */
-import { useEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGame } from '../game/store';
 import { headingTo, restAngle, sqToXZ, type Segment, type Unit, type Vec2 } from '../game/choreography';
-import { useSettings, type ArmyId } from '../config/settings';
+import { useSettings, armyOf, classicArmy } from '../config/settings';
 import { UnitModel } from './units/UnitModel';
+import { GlbUnit, GlbErrorBoundary } from './units/GlbUnit';
 import { newPose, env, smooth, clamp01, type Pose } from './units/pose';
 import { dragState } from './dragState';
 
@@ -99,12 +100,31 @@ function evaluate(unit: Unit, segs: Segment[], t: number, isKnight: boolean): Ev
         break;
     }
   }
+  // A unit about to be struck raises its guard from the moment it turns to face the attacker.
+  const face = segs.find((s) => s.kind === 'face');
+  const hit = segs.find((s) => s.kind === 'hit');
+  if (face && hit && e.pose === 'idle' && t >= face.t0 && t < hit.t0) e.pose = 'defend';
   e.x = pos[0];
   e.z = pos[1];
   return e;
 }
 
 const ringGeo = new THREE.RingGeometry(0.36, 0.44, 40).rotateX(-Math.PI / 2);
+
+// Army base plinths: make allegiance readable at a glance from any camera angle
+// (both armies share crimson cloth, so colour alone is not enough on the board).
+const plinthGeo = new THREE.CylinderGeometry(0.31, 0.34, 0.03, 40);
+const inlayGeo = new THREE.TorusGeometry(0.285, 0.01, 6, 48).rotateX(Math.PI / 2);
+const PLINTH = {
+  sun: {
+    base: new THREE.MeshStandardMaterial({ color: '#9c7a3c', metalness: 0.85, roughness: 0.42 }),
+    inlay: new THREE.MeshStandardMaterial({ color: '#f3e7c4', emissive: '#f0c95a', emissiveIntensity: 0.6, roughness: 0.4 }),
+  },
+  shadow: {
+    base: new THREE.MeshStandardMaterial({ color: '#1b1618', metalness: 0.75, roughness: 0.45 }),
+    inlay: new THREE.MeshStandardMaterial({ color: '#5a0d0d', emissive: '#a01818', emissiveIntensity: 0.9, roughness: 0.5 }),
+  },
+};
 const glowGeo = new THREE.CylinderGeometry(0.35, 0.35, 2.4, 24, 1, true);
 
 export function PieceActor({ unit }: { unit: Unit }) {
@@ -118,7 +138,8 @@ export function PieceActor({ unit }: { unit: Unit }) {
   const restYaw = useRef(restAngle(unit.color));
 
   const whiteArmy = useSettings((s) => s.whiteArmy);
-  const army: ArmyId = unit.color === 'w' ? whiteArmy : whiteArmy === 'hellenic' ? 'persian' : 'hellenic';
+  const army = armyOf(unit.color, whiteArmy);
+  const detailed = useSettings((s) => s.unitModels === 'detailed');
   const quality = useSettings((s) => s.quality);
   const selected = useGame((s) => s.selected === unit.square && !s.anim);
   const dragging = useGame((s) => s.dragging === unit.square);
@@ -158,7 +179,9 @@ export function PieceActor({ unit }: { unit: Unit }) {
       const [x, z] = sqToXZ(unit.square);
       // ease back to facing the enemy after combat / movement
       restYaw.current = lerpAngle(restYaw.current, restAngle(unit.color), Math.min(1, dt * 3));
-      ev = { x, z, y: 0, yaw: restYaw.current, tilt: 0, opacity: 1, pose: 'idle', p: 0, stride: 0, style: 'sword' };
+      // The winning army celebrates once the battle is decided.
+      const won = s.outcome.over && s.outcome.winner === unit.color;
+      ev = { x, z, y: 0, yaw: restYaw.current, tilt: 0, opacity: 1, pose: won ? 'victory' : 'idle', p: 0, stride: 0, style: 'sword' };
       if (dragging && dragState.point) {
         ev.x = dragState.point.x;
         ev.z = dragState.point.z;
@@ -232,8 +255,22 @@ export function PieceActor({ unit }: { unit: Unit }) {
   return (
     <>
       <group ref={root} onPointerDown={onDown} onClick={onClick}>
-        <group ref={tiltRef}>
-          <UnitModel type={unit.type} army={army} variant={unit.variant} pose={pose} />
+        {detailed && (
+          <group position={[0, 0.015, 0]}>
+            <mesh geometry={plinthGeo} material={PLINTH[army].base} receiveShadow />
+            <mesh geometry={inlayGeo} material={PLINTH[army].inlay} position={[0, 0.016, 0]} />
+          </group>
+        )}
+        <group ref={tiltRef} position={[0, detailed ? 0.03 : 0, 0]}>
+          {detailed ? (
+            <GlbErrorBoundary fallback={<UnitModel type={unit.type} army={classicArmy(army)} variant={unit.variant} pose={pose} />}>
+              <Suspense fallback={<UnitModel type={unit.type} army={classicArmy(army)} variant={unit.variant} pose={pose} />}>
+                <GlbUnit key={`${army}${unit.type}`} type={unit.type} army={army} pose={pose} />
+              </Suspense>
+            </GlbErrorBoundary>
+          ) : (
+            <UnitModel type={unit.type} army={classicArmy(army)} variant={unit.variant} pose={pose} />
+          )}
         </group>
         {/* generous invisible hit volume so units are easy to tap on phones */}
         <mesh position={[0, 0.4, 0]} visible={false}>

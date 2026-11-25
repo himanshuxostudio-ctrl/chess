@@ -1,6 +1,7 @@
 /** The 3D battlefield canvas. Lazy-loaded so the landing UI paints before three.js. */
-import { Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Suspense, useEffect } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import * as THREE from 'three';
 import { useGame } from '../game/store';
 import { useSettings } from '../config/settings';
@@ -9,6 +10,35 @@ import { PieceActor } from './PieceActor';
 import { Battlefield } from './env/Battlefield';
 import { Effects } from './Effects';
 import { CameraRig } from './CameraRig';
+import { preloadArmies } from './units/GlbUnit';
+
+/**
+ * Image-based lighting generated locally (no HDR download): PBR metals — gold, bronze, blackened
+ * iron — need something to reflect, or they render almost black under direct lights alone.
+ */
+function ArmourReflections() {
+  const { gl, scene } = useThree();
+  useEffect(() => {
+    const pmrem = new THREE.PMREMGenerator(gl);
+    const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = env;
+    scene.environmentIntensity = 0.45;
+    return () => {
+      scene.environment = null;
+      env.dispose();
+      pmrem.dispose();
+    };
+  }, [gl, scene]);
+  return null;
+}
+
+function Preload() {
+  const detailed = useSettings((s) => s.unitModels === 'detailed');
+  useEffect(() => {
+    if (detailed) preloadArmies();
+  }, [detailed]);
+  return null;
+}
 
 function Units() {
   const units = useGame((s) => s.units);
@@ -37,6 +67,8 @@ export default function Scene() {
       }}
       onPointerMissed={() => useGame.getState().deselect()}
     >
+      <ArmourReflections />
+      <Preload />
       <Suspense fallback={null}>
         <Battlefield />
         <Board />

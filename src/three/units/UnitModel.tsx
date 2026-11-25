@@ -5,7 +5,7 @@
  */
 import { memo, type RefObject } from 'react';
 import type { PieceSymbol } from 'chess.js';
-import type { ArmyId } from '../../config/settings';
+import type { ClassicArmy as ArmyId } from '../../config/settings';
 import { armyMaterials } from '../materials';
 import { Humanoid, type Outfit } from './Humanoid';
 import { Chariot, Horse } from './Mounts';
