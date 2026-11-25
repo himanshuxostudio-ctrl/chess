@@ -74,7 +74,18 @@ export const useProfile = create<ProfileState>()(
         }),
       reset: () => set({ rating: 1200, history: [], stats: { wins: 0, losses: 0, draws: 0 }, modeCounts: { ai: 0, online: 0, local: 0 } }),
     }),
-    { name: 'awc-profile', version: 1 },
+    {
+      name: 'awc-profile',
+      version: 1,
+      // Persist the generated guest name immediately so it stays stable across reloads and rematches.
+      onRehydrateStorage: () => (state) => {
+        try {
+          if (state && typeof localStorage !== 'undefined' && !localStorage.getItem('awc-profile')) state.setName(state.name);
+        } catch {
+          /* storage unavailable */
+        }
+      },
+    },
   ),
 );
 

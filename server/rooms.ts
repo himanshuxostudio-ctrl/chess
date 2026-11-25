@@ -4,6 +4,7 @@
  */
 import { randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { ChessMatch, START_FEN, uciToInput, type Color, type Outcome } from '../shared/rules';
+import { DEFAULT_MATCH, type MatchConfig } from '../shared/match';
 import {
   DISCONNECT_GRACE_MS,
   type ErrorCode,
@@ -32,7 +33,13 @@ export interface PersistedRoom {
   seats: { w: Seat | null; b: Seat | null };
   timeControl: TimeControl;
   clock: { w: number; b: number; running: Color | null; lastTick: number };
-  status: 'waiting' | 'active' | 'over';
+  status: 'waiting' | 'ready' | 'active' | 'over' | 'cancelled';
+  /** Server-authoritative settings; normalised from the creator's request. */
+  config: MatchConfig;
+  /** Invitations need both players to confirm before the game starts. */
+  requireReady: boolean;
+  ready: { w: boolean; b: boolean };
+  hostColor: Color | null;
   forced?: Outcome;
   drawOfferBy: Color | null;
   rematchBy: Color | null;
@@ -62,12 +69,18 @@ export class Room {
   spectators = 0;
 
   constructor(data: PersistedRoom) {
+    // Rooms persisted before match configs existed get sensible defaults.
+    data.config ??= { ...DEFAULT_MATCH, timeControl: data.timeControl };
+    data.requireReady ??= false;
+    data.ready ??= { w: false, b: false };
+    data.hostColor ??= null;
     this.data = data;
     this.match = new ChessMatch(data.initialFen, data.moves);
     this.match.setForced(data.forced);
   }
 
-  static create(timeControl: TimeControl, now = Date.now()): Room {
+  static create(config: MatchConfig, requireReady = false, now = Date.now()): Room {
+    const timeControl: TimeControl = config.timeControl;
     const ms = timeControl.initial * 1000;
     return new Room({
       id: newRoomId(),
@@ -78,6 +91,10 @@ export class Room {
       timeControl,
       clock: { w: ms, b: ms, running: null, lastTick: now },
       status: 'waiting',
+      config,
+      requireReady,
+      ready: { w: false, b: false },
+      hostColor: null,
       drawOfferBy: null,
       rematchBy: null,
       startedAt: null,
@@ -99,14 +116,36 @@ export class Room {
     const token = newToken();
     this.data.seats[color] = { token, info: { ...info, connected: false }, sockets: 0, disconnectedAt: null };
     if (this.data.seats.w && this.data.seats.b && this.data.status === 'waiting') {
-      this.data.status = 'active';
-      this.data.startedAt = now;
-      this.data.clock.lastTick = now;
-      // Clocks start only after White's first move (common online practice); see move().
-      this.data.clock.running = null;
+      if (this.data.requireReady) this.data.status = 'ready';
+      else this.start(now);
     }
     this.touch(now);
     return token;
+  }
+
+  private start(now: number) {
+    this.data.status = 'active';
+    this.data.startedAt = now;
+    this.data.clock.lastTick = now;
+    // Clocks start only after White's first move (common online practice); see move().
+    this.data.clock.running = null;
+  }
+
+  /** A seated player confirms they are ready; the game starts when both have. */
+  setReady(color: Color, now = Date.now()) {
+    if (this.data.status !== 'ready') throw new RoomError('not_ready', 'Nothing to get ready for');
+    this.data.ready[color] = true;
+    if (this.data.ready.w && this.data.ready.b) this.start(now);
+    this.touch(now);
+  }
+
+  /** The host withdraws an invitation that has not started yet. */
+  cancel(color: Color, now = Date.now()) {
+    if (this.data.hostColor !== color) throw new RoomError('forbidden', 'Only the host can cancel the invitation');
+    if (this.data.status !== 'waiting' && this.data.status !== 'ready') throw new RoomError('bad_request', 'The battle has already begun');
+    this.data.status = 'cancelled';
+    this.data.endedAt = now;
+    this.touch(now);
   }
 
   colorForToken(token: string | undefined): Color | null {
@@ -178,7 +217,8 @@ export class Room {
 
   move(color: Color, uci: string, ply: number, now = Date.now()) {
     if (typeof uci !== 'string' || !/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(uci)) throw new RoomError('bad_request', 'Malformed move');
-    if (this.data.status === 'waiting') throw new RoomError('not_ready', 'Waiting for opponent');
+    if (this.data.status === 'waiting' || this.data.status === 'ready') throw new RoomError('not_ready', 'Waiting for both commanders');
+    if (this.data.status === 'cancelled') throw new RoomError('cancelled', 'This invitation was cancelled');
     this.tick(now);
     if (this.data.status === 'over') throw new RoomError('game_over', 'Game is over');
     // `ply` lets the server drop duplicates (re-sent after reconnect) and conflicting stale moves.
@@ -255,6 +295,9 @@ export class Room {
       clock: { ...live, running: c.running },
       serverTime: now,
       status: this.data.status,
+      config: this.data.config,
+      ready: { ...this.data.ready },
+      hostColor: this.data.hostColor,
       outcome: this.match.outcome(),
       drawOfferBy: this.data.drawOfferBy,
       rematchBy: this.data.rematchBy,
@@ -268,7 +311,8 @@ export class Room {
   expired(now = Date.now()): boolean {
     const idle = now - this.data.lastActivity;
     const anyone = !!(this.data.seats.w?.info.connected || this.data.seats.b?.info.connected || this.spectators);
-    if (this.data.status === 'waiting') return idle > 60 * 60_000 && !anyone; // 1h unjoined
+    if (this.data.status === 'cancelled') return now - (this.data.endedAt ?? now) > 10 * 60_000; // 10 min after cancel
+    if (this.data.status === 'waiting' || this.data.status === 'ready') return idle > 60 * 60_000 && !anyone; // 1h unstarted
     if (this.data.status === 'over') return now - (this.data.endedAt ?? now) > 6 * 60 * 60_000 && !anyone; // 6h after end
     return idle > 24 * 60 * 60_000 && !anyone; // abandoned active game: 24h
   }

@@ -61,6 +61,11 @@ async function newGame() {
   await b.ready;
   b.send({ t: 'join', roomId: created.roomId, name: 'Darius' });
   const joined = await b.next('joined');
+  // Invitations start only when both commanders confirm they are ready.
+  a.send({ t: 'ready' });
+  b.send({ t: 'ready' });
+  await a.next('state', (m) => m.snapshot.status === 'active');
+  await b.next('state', (m) => m.snapshot.status === 'active');
   return { a, b, roomId: created.roomId, tokenA: created.token!, tokenB: joined.token!, created, joined };
 }
 
@@ -70,7 +75,7 @@ describe('multiplayer server', () => {
     expect(roomId).toMatch(/^[A-HJ-NP-Z2-9]{10}$/);
     expect(created.color).toBe('w');
     expect(joined.color).toBe('b');
-    expect(joined.snapshot.status).toBe('active');
+    expect(joined.snapshot.status).toBe('ready'); // invitation: waits for both to confirm
     expect(joined.snapshot.players.w?.name).toBe('Alexios');
     a.close();
     b.close();
@@ -199,6 +204,9 @@ describe('multiplayer server', () => {
     await b.ready;
     b.send({ t: 'join', roomId: cr.roomId, name: 'B' });
     await b.next('joined');
+    a.send({ t: 'ready' });
+    b.send({ t: 'ready' });
+    await b.next('state', (m) => m.snapshot.status === 'active');
     a.send({ t: 'move', uci: 'e2e4', ply: 0 }); // starts black's clock
     await b.next('moved');
     const over = await a.next('state', (m) => m.snapshot.status === 'over');
@@ -248,5 +256,121 @@ describe('multiplayer server', () => {
     expect(j.color).toBe('w');
     expect(j.snapshot.moves).toEqual(['g1f3']);
     a2.close();
+  });
+
+  // ---------------------------------------------------------------- match preparation
+  it('server owns the match config: both players receive identical normalised settings', async () => {
+    const a = new Client(); await a.ready;
+    a.send({ t: 'create', name: 'Host', color: 'random',
+      match: { timeControl: { initial: 300, increment: 3 }, battlefield: 'fortress', rated: false, allowSpectators: true, allowRematch: false } });
+    const cr = await a.next('joined');
+    const b = new Client(); await b.ready;
+    b.send({ t: 'join', roomId: cr.roomId, name: 'Guest' });
+    const jb = await b.next('joined');
+    expect(cr.snapshot.config).toEqual({ variant: 'standard', timeControl: { initial: 300, increment: 3 }, battlefield: 'fortress',
+      rated: false, allowSpectators: true, allowRematch: false });
+    expect(jb.snapshot.config).toEqual(cr.snapshot.config);
+    expect(jb.color).toBe(cr.color === 'w' ? 'b' : 'w');
+    expect(jb.snapshot.hostColor).toBe(cr.color);
+    a.close(); b.close();
+  });
+
+  it('rejects hostile settings and resolves a random battlefield on the server', async () => {
+    const a = new Client(); await a.ready;
+    a.send({ t: 'create', name: 'X', color: 'w',
+      match: { timeControl: { initial: 999999, increment: -5 }, battlefield: 'random' } as never });
+    const cr = await a.next('joined');
+    expect(cr.snapshot.config.timeControl).toEqual({ initial: 180 * 60, increment: 0 });
+    expect(['sun', 'shadow', 'eclipse', 'fortress']).toContain(cr.snapshot.config.battlefield);
+    a.close();
+  });
+
+  it('invitation waits for both players to be ready; moves are refused until then', async () => {
+    const a = new Client(); await a.ready;
+    a.send({ t: 'create', name: 'H', color: 'w', match: { battlefield: 'sun' } });
+    const cr = await a.next('joined');
+    expect(cr.snapshot.status).toBe('waiting');
+    const b = new Client(); await b.ready;
+    b.send({ t: 'join', roomId: cr.roomId, name: 'G' });
+    await b.next('joined');
+    await a.next('state', (m) => m.snapshot.status === 'ready');
+    a.send({ t: 'move', uci: 'e2e4', ply: 0 });
+    expect((await a.next('error')).code).toBe('not_ready');
+    a.send({ t: 'ready' });
+    const st = await b.next('state', (m) => m.snapshot.ready.w);
+    expect(st.snapshot.status).toBe('ready');
+    b.send({ t: 'ready' });
+    await a.next('state', (m) => m.snapshot.status === 'active');
+    a.send({ t: 'move', uci: 'e2e4', ply: 0 });
+    expect((await b.next('moved')).uci).toBe('e2e4');
+    a.close(); b.close();
+  });
+
+  it('host can cancel an invitation; the guest is told and nobody can join afterwards', async () => {
+    const a = new Client(); await a.ready;
+    a.send({ t: 'create', name: 'H', color: 'b' });
+    const cr = await a.next('joined');
+    const b = new Client(); await b.ready;
+    b.send({ t: 'join', roomId: cr.roomId, name: 'G' });
+    await b.next('joined');
+    b.send({ t: 'cancel' }); // guest may not cancel
+    expect((await b.next('error')).code).toBe('forbidden');
+    a.send({ t: 'cancel' });
+    const st = await b.next('state', (m) => m.snapshot.status === 'cancelled');
+    expect(st.snapshot.status).toBe('cancelled');
+    const c = new Client(); await c.ready;
+    c.send({ t: 'join', roomId: cr.roomId, name: 'Late' });
+    expect((await c.next('error')).code).toBe('cancelled');
+    [a, b, c].forEach((x) => x.close());
+  });
+
+  it('enforces "allow spectators" and "allow rematch"', async () => {
+    const a = new Client(); await a.ready;
+    a.send({ t: 'create', name: 'H', color: 'w', match: { allowSpectators: false, allowRematch: false } });
+    const cr = await a.next('joined');
+    const w = new Client(); await w.ready;
+    w.send({ t: 'watch', roomId: cr.roomId });
+    expect((await w.next('error')).code).toBe('forbidden');
+    const b = new Client(); await b.ready;
+    b.send({ t: 'join', roomId: cr.roomId, name: 'G' });
+    await b.next('joined');
+    a.send({ t: 'ready' }); b.send({ t: 'ready' });
+    await a.next('state', (m) => m.snapshot.status === 'active');
+    b.send({ t: 'resign' });
+    await a.next('state', (m) => m.snapshot.status === 'over');
+    a.send({ t: 'rematch' });
+    expect((await a.next('error')).code).toBe('forbidden');
+    [a, b, w].forEach((x) => x.close());
+  });
+
+  it('matchmade games start immediately with a server-chosen battlefield shared by both', async () => {
+    const a = new Client(); const b = new Client();
+    await Promise.all([a.ready, b.ready]);
+    const tc = { initial: 180, increment: 2 };
+    a.send({ t: 'queue', name: 'Q1', timeControl: tc });
+    await a.next('queued');
+    b.send({ t: 'queue', name: 'Q2', timeControl: tc });
+    const ma = await a.next('matched'); const mb = await b.next('matched');
+    a.send({ t: 'join', roomId: ma.roomId, name: 'Q1', token: ma.token });
+    b.send({ t: 'join', roomId: mb.roomId, name: 'Q2', token: mb.token });
+    const ja = await a.next('joined'); const jb = await b.next('joined');
+    expect(ja.snapshot.status).toBe('active');
+    expect(ja.snapshot.config.battlefield).toBe(jb.snapshot.config.battlefield);
+    expect(ja.snapshot.config.timeControl).toEqual(tc);
+    a.close(); b.close();
+  });
+
+  it('peek shows an invitation without seating the viewer', async () => {
+    const a = new Client(); await a.ready;
+    a.send({ t: 'create', name: 'Host', color: 'w', match: { battlefield: 'eclipse', timeControl: { initial: 600, increment: 5 } } });
+    const cr = await a.next('joined');
+    const p = new Client(); await p.ready;
+    p.send({ t: 'peek', roomId: cr.roomId });
+    const pk = await p.next('peek');
+    expect(pk.snapshot.config.battlefield).toBe('eclipse');
+    expect(pk.snapshot.players.w?.name).toBe('Host');
+    expect(pk.snapshot.players.b).toBeNull();          // still free
+    expect(JSON.stringify(pk)).not.toContain(cr.token!); // no secrets leak
+    a.close(); p.close();
   });
 });

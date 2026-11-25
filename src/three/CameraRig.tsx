@@ -13,9 +13,23 @@ import { useGame } from '../game/store';
 import { useSettings } from '../config/settings';
 
 export type ViewMode = 'default' | 'top' | 'cinematic';
-export const useView = create<{ view: ViewMode; nonce: number; panelOffset: number; setView: (v: ViewMode) => void; reset: () => void }>((set) => ({
+export const INTRO_MS = 4600;
+export const useView = create<{
+  view: ViewMode;
+  nonce: number;
+  panelOffset: number;
+  /** Match-intro camera sweep: active while performance.now() < introUntil. */
+  introUntil: number;
+  setView: (v: ViewMode) => void;
+  reset: () => void;
+  startIntro: () => void;
+  endIntro: () => void;
+}>((set) => ({
   view: 'default',
   nonce: 0,
+  introUntil: 0,
+  startIntro: () => set({ introUntil: performance.now() + INTRO_MS }),
+  endIntro: () => set((s) => (s.introUntil ? { introUntil: 0, view: 'default', nonce: s.nonce + 1 } : s)),
   /** Fraction of the screen width covered by a desktop side panel. */
   panelOffset: 0,
   setView: (view) => set((s) => ({ view, nonce: s.nonce + 1 })),
@@ -106,6 +120,24 @@ export function CameraRig({ showcase }: { showcase: boolean }) {
       camera.position.set(Math.sin(t * 0.06) * 11, 5.2 + Math.sin(t * 0.13) * 0.8, Math.cos(t * 0.06) * 11);
       c.target.set(0, 0.4, 0);
       camera.lookAt(c.target);
+      return;
+    }
+    // Match intro: sweep from a wide shot of the arena, around the armies, down to the player's view.
+    const introUntil = useView.getState().introUntil;
+    const nowMs = performance.now();
+    if (introUntil > nowMs) {
+      const home = homeRef.current;
+      const p = 1 - (introUntil - nowMs) / INTRO_MS;
+      const e = p * p * (3 - 2 * p);
+      const homeAngle = Math.atan2(home.pos.x, home.pos.z);
+      const homeR = Math.hypot(home.pos.x, home.pos.z);
+      const a = homeAngle + (1 - e) * Math.PI * 1.15;
+      const r = homeR + (1 - e) * 8;
+      const y = home.pos.y + (1 - e) * 3.5 - Math.sin(e * Math.PI) * 2.2;
+      camera.position.set(Math.sin(a) * r, y, Math.cos(a) * r);
+      c.target.set(home.target.x * e, 0.4 * (1 - e) + home.target.y * e, home.target.z * e);
+      camera.lookAt(c.target);
+      goal.current = null;
       return;
     }
     const g = goal.current;

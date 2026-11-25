@@ -10,6 +10,7 @@ import { create } from 'zustand';
 import type { Color, Move, PieceSymbol, Square } from 'chess.js';
 import { ChessMatch, START_FEN, REASON_TEXT, moveToUci, uciToInput, type Outcome } from '../../shared/rules';
 import type { RoomSnapshot, ServerMsg, TimeControl } from '../../shared/protocol';
+import type { BattlefieldId, MatchRequest } from '../../shared/match';
 import { choreograph, unitsFromBoard, type Choreography, type Unit } from './choreography';
 import { useSettings } from '../config/settings';
 import { sound } from '../audio/sound';
@@ -46,6 +47,10 @@ export interface GameConfig {
   timeControl?: TimeControl;
   names?: { w: string; b: string };
   passScreen?: boolean; // local: show hand-over screen
+  /** Presentation only — never affects rules, clocks or sync. Online games take it from the server. */
+  battlefield?: BattlefieldId;
+  /** Whether the result updates the local rating. */
+  rated?: boolean;
 }
 
 interface GameState {
@@ -84,6 +89,15 @@ interface GameState {
   awaitingServer: boolean;
   focusRequest: { x: number; z: number; at: number; kind: 'select' | 'capture' | 'check' | 'mate' } | null;
   recorded: boolean;
+  /** Battlefield arena for this match (server-authoritative online). */
+  battlefield: BattlefieldId;
+  rated: boolean;
+  /** Matchmaking queue state. */
+  searching: boolean;
+  queuePosition: number | null;
+  /** Public details of an invitation before accepting it. */
+  peek: RoomSnapshot | null;
+  peekError: string | null;
 
   newGame: (cfg: GameConfig) => void;
   clickSquare: (sq: Square) => void;
@@ -102,7 +116,11 @@ interface GameState {
   toast: (text: string, kind?: Toast['kind']) => void;
   dismissResult: () => void;
   // online
-  createRoom: (color: Color | 'random', tc: TimeControl) => void;
+  createRoom: (color: Color | 'random', match: MatchRequest) => void;
+  peekRoom: (roomId: string) => void;
+  sendReady: () => void;
+  cancelInvite: () => void;
+  cancelSearch: () => void;
   joinRoom: (roomId: string, spectate?: boolean) => void;
   quickMatch: (tc: TimeControl) => void;
   leave: () => void;
@@ -235,7 +253,7 @@ export const useGame = create<GameState>()((set, get) => {
         durationSec: Math.round(((s.endedAt ?? Date.now()) - s.startedAt) / 1000),
         pgn: s.match.pgn({ White: s.players.w.name, Black: s.players.b.name, Event: 'Ancient Warfare Chess' }),
       },
-      s.mode === 'local' ? undefined : opp.rating,
+      s.mode === 'local' || !s.rated ? undefined : opp.rating,
     );
     set({ recorded: true });
   };
@@ -308,6 +326,8 @@ export const useGame = create<GameState>()((set, get) => {
         b: snap.players.b ? { ...snap.players.b } : { name: 'Awaiting commander…', connected: false },
       },
       timeControl: snap.timeControl,
+      battlefield: snap.config?.battlefield ?? get().battlefield,
+      rated: snap.config?.rated ?? true,
       outcome: match.outcome(),
       startedAt: snap.startedAt ?? Date.now(),
     });
@@ -359,21 +379,28 @@ export const useGame = create<GameState>()((set, get) => {
             sound.play('turn');
           }
         }
+        if (msg.snapshot.status === 'cancelled' && prev?.status !== 'cancelled' && s.myColor !== msg.snapshot.hostColor)
+          get().toast('The host withdrew this challenge.', 'error');
         if (msg.snapshot.drawOfferBy && msg.snapshot.drawOfferBy !== prev?.drawOfferBy && msg.snapshot.drawOfferBy !== s.myColor)
           get().toast('Your opponent offers a truce (draw).', 'info');
         break;
       }
       case 'matched': {
         tokenStore.set(msg.roomId, msg.token);
-        set({ roomId: null, recorded: false, showResult: false });
+        set({ roomId: null, recorded: false, showResult: false, searching: false, queuePosition: null });
         get().joinRoom(msg.roomId);
         break;
       }
       case 'queued':
-        get().toast(`Searching for an opponent… (position ${msg.position})`, 'info');
+        set({ searching: true, queuePosition: msg.position });
+        break;
+      case 'peek':
+        set({ peek: msg.snapshot, peekError: null });
         break;
       case 'error':
         set({ awaitingServer: false });
+        if (!s.roomId && (msg.code === 'not_found' || msg.code === 'cancelled' || msg.code === 'bad_request' || msg.code === 'forbidden'))
+          set({ peekError: msg.message });
         if (msg.code === 'illegal_move' || msg.code === 'not_your_turn' || msg.code === 'stale_ply') sound.play('illegal');
         get().toast(msg.message, 'error');
         if (msg.code === 'stale_ply' && s.snapshot) syncFromSnapshot(s.snapshot, true);
@@ -485,6 +512,12 @@ export const useGame = create<GameState>()((set, get) => {
     awaitingServer: false,
     focusRequest: null,
     recorded: false,
+    battlefield: 'eclipse',
+    rated: true,
+    searching: false,
+    queuePosition: null,
+    peek: null,
+    peekError: null,
 
     newGame: (cfg) => {
       const s = get();
@@ -536,6 +569,8 @@ export const useGame = create<GameState>()((set, get) => {
         endedAt: null,
         awaitingServer: false,
         recorded: false,
+        battlefield: cfg.battlefield ?? s.battlefield,
+        rated: cfg.mode === 'local' ? false : cfg.rated ?? true,
       });
       if (cfg.mode === 'ai' && myColor === 'b') void aiMove();
     },
@@ -685,15 +720,26 @@ export const useGame = create<GameState>()((set, get) => {
     },
     dismissResult: () => set({ showResult: false }),
 
-    createRoom: (color, tc) => {
+    createRoom: (color, match) => {
       const net = ensureNet();
       const p = useProfile.getState();
-      get().newGame({ mode: 'online', timeControl: tc });
+      get().newGame({ mode: 'online', timeControl: match.timeControl });
       net.resume = () => {
         const id = get().roomId;
         return id ? { t: 'join', roomId: id, name: p.name, avatar: p.avatar, rating: p.rating, token: tokenStore.get(id) } : null;
       };
-      net.send({ t: 'create', name: p.name, avatar: p.avatar, rating: p.rating, color, timeControl: tc });
+      net.send({ t: 'create', name: p.name, avatar: p.avatar, rating: p.rating, color, match });
+    },
+    peekRoom: (roomId) => {
+      set({ peek: null, peekError: null });
+      ensureNet().send({ t: 'peek', roomId });
+    },
+    sendReady: () => get().net?.send({ t: 'ready' }),
+    cancelInvite: () => get().net?.send({ t: 'cancel' }),
+    cancelSearch: () => {
+      get().net?.send({ t: 'leaveQueue' });
+      set({ searching: false, queuePosition: null });
+      get().leave();
     },
     joinRoom: (roomId, spectate = false) => {
       const net = ensureNet();
@@ -720,6 +766,7 @@ export const useGame = create<GameState>()((set, get) => {
       const net = ensureNet();
       const p = useProfile.getState();
       get().newGame({ mode: 'online', timeControl: tc });
+      set({ searching: true, queuePosition: null });
       net.resume = () => {
         const id = get().roomId;
         if (id) return { t: 'join', roomId: id, name: p.name, token: tokenStore.get(id) };
